@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import NewMeeting from './pages/NewMeeting';
 import AllMeetings from './pages/AllMeetings';
 import MeetingDetails from './pages/MeetingDetails';
+import LandingPage from './pages/LandingPage';
 import Auth from './components/Auth';
 import LoadingSpinner from './components/LoadingSpinner';
 
@@ -14,6 +15,7 @@ const AppContent = () => {
   const [activeView, setActiveView] = useState('dashboard');
   const [selectedMeetingId, setSelectedMeetingId] = useState(null);
   const [activeTab, setActiveTab] = useState('transcript');
+  const [showLanding, setShowLanding] = useState(false);
   const { user, loading, isAuthenticated } = useAuth();
 
   if (loading) {
@@ -21,7 +23,10 @@ const AppContent = () => {
   }
 
   if (!isAuthenticated) {
-    return <Auth />;
+    if (showLanding) {
+      return <Auth />;
+    }
+    return <LandingPage onGetStarted={() => setShowLanding(true)} />;
   }
 
   const handleMeetingClick = (meetingId, tab = 'transcript') => {
