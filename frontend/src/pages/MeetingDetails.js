@@ -14,7 +14,8 @@ import {
   FileText,
   MessageSquare,
   Brain,
-  RefreshCw  
+  RefreshCw,
+  ClipboardList  
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import TranscriptViewer from '../components/TranscriptViewer';
@@ -43,7 +44,8 @@ const MeetingDetails = ({ meetingId, activeTab, onBack, onTabChange }) => {
     { id: 'summary', label: 'Summary', icon: FileText },
     { id: 'knowledge-graph', label: 'Knowledge Graph', icon: Brain },
     { id: 'chat', label: 'AI Chat', icon: MessageSquare },
-    { id: 'insights', label: 'Insights', icon: Brain }
+    { id: 'insights', label: 'Insights', icon: Brain },
+    { id: 'minutes', label: 'Minutes', icon: ClipboardList }
   ];
 
   useEffect(() => {
@@ -520,7 +522,11 @@ const MeetingDetails = ({ meetingId, activeTab, onBack, onTabChange }) => {
           )}
           
           {activeTab === 'insights' && (
-            <InsightsView meeting={meeting} />
+            <InsightsView meeting={meeting} meetingId={meetingId} />
+          )}
+
+          {activeTab === 'minutes' && (
+            <MinutesView minutes={meeting.minutes} meetingId={meetingId} />
           )}
         </div>
       </div>
@@ -694,87 +700,238 @@ const SummaryView = ({ summary, meetingId }) => {
   );
 };
 
-// Insights Component  
-const InsightsView = ({ meeting }) => {
-  const insights = [
-    {
-      title: 'Meeting Duration',
-      value: '45 minutes',
-      description: 'Efficient meeting length',
-      color: 'green'
-    },
-    {
-      title: 'Speaker Distribution',
-      value: '3 active speakers',
-      description: 'Good participation balance',
-      color: 'blue'
-    },
-    {
-      title: 'Action Items',
-      value: `${meeting.knowledge_graph?.action_items?.length || 0} items`,
-      description: 'Clear next steps defined',
-      color: 'purple'
-    },
-    {
-      title: 'Topics Covered',
-      value: `${meeting.knowledge_graph?.topics?.length || 0} topics`,
-      description: 'Comprehensive discussion',
-      color: 'orange'
+const MinutesView = ({ minutes, meetingId }) => {
+  const { makeAuthenticatedRequest } = useAuth();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedMinutes, setGeneratedMinutes] = useState(minutes);
+  const [error, setError] = useState('');
+
+  const generateMinutes = async () => {
+    setIsGenerating(true);
+    setError('');
+
+    try {
+      console.log('Generating minutes for meeting:', meetingId);
+
+      const response = await makeAuthenticatedRequest(`/minutes/${meetingId}`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setGeneratedMinutes(data.minutes);
+        console.log('Minutes generated successfully');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate minutes');
+      }
+    } catch (error) {
+      console.error('Error generating minutes:', error);
+      setError(error.message);
+    } finally {
+      setIsGenerating(false);
     }
-  ];
+  };
+
+  if (!generatedMinutes && !isGenerating && !error) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 text-center">
+        <ClipboardList className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+          No Minutes Available
+        </h3>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
+          Generate the official Minutes of the Meeting from the transcript.
+        </p>
+        <button
+          onClick={generateMinutes}
+          className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+        >
+          Generate Minutes
+        </button>
+      </div>
+    );
+  }
+
+  if (isGenerating) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 text-center">
+        <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+          Generating Minutes...
+        </h3>
+        <p className="text-gray-600 dark:text-gray-400">
+          Our AI is analyzing the transcript and drafting the minutes. Please wait.
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 text-center">
+        <div className="w-16 h-16 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto mb-4">
+          <X className="w-8 h-8 text-red-600 dark:text-red-400" />
+        </div>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+          Failed to Generate Minutes
+        </h3>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
+        <button
+          onClick={generateMinutes}
+          className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {insights.map((insight, index) => (
-          <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              {insight.title}
-            </h3>
-            <div className={`text-2xl font-bold text-${insight.color}-600 dark:text-${insight.color}-400 mb-1`}>
-              {insight.value}
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              {insight.description}
-            </p>
-          </div>
-        ))}
+    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+          Minutes of Meeting
+        </h3>
+        <button
+          onClick={generateMinutes}
+          disabled={isGenerating}
+          className="flex items-center space-x-2 px-4 py-2 bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 rounded-lg transition-colors disabled:opacity-50"
+        >
+          <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
+          <span>Regenerate</span>
+        </button>
       </div>
 
-      {/* Action Items */}
-      {meeting.knowledge_graph?.action_items && meeting.knowledge_graph.action_items.length > 0 && (
-        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Action Items
-          </h3>
-          <div className="space-y-3">
-            {meeting.knowledge_graph.action_items.map((item, index) => (
-              <div key={index} className="flex items-start space-x-3 p-3 bg-white dark:bg-gray-600 rounded-lg">
-                <div className="flex-shrink-0 w-6 h-6 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                  <span className="text-xs font-medium text-blue-600 dark:text-blue-300">
-                    {index + 1}
-                  </span>
-                </div>
-                <div className="flex-1">
-                  <p className="text-gray-900 dark:text-white font-medium">
-                    {item.task}
-                  </p>
-                  {item.assignee && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Assigned to: {item.assignee}
-                    </p>
-                  )}
-                  {item.due_date && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Due: {item.due_date}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+      <div className="p-6">
+        <div className="bg-gray-100 dark:bg-gray-700 rounded-2xl p-6">
+          <MarkdownRenderer
+            content={generatedMinutes}
+            className="text-gray-900 dark:text-gray-100"
+          />
         </div>
-      )}
+      </div>
+    </div>
+  );
+};
+
+// Insights Component  
+const InsightsView = ({ insights, meetingId }) => {
+  const { makeAuthenticatedRequest } = useAuth();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedInsights, setGeneratedInsights] = useState(insights);
+  const [error, setError] = useState('');
+
+  const generateInsights = async () => {
+    setIsGenerating(true);
+    setError('');
+
+    try {
+      console.log('Generating insights for meeting:', meetingId);
+
+      const response = await makeAuthenticatedRequest(`/insights/${meetingId}`, {
+        method: 'POST',
+        body: JSON.stringify({})
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setGeneratedInsights(data.insights);
+        console.log('Insights generated successfully');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate insights');
+      }
+    } catch (error) {
+      console.error('Error generating insights:', error);
+      setError(error.message);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  if (!generatedInsights && !isGenerating && !error) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 text-center">
+        <Brain className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+          No Insights Available
+        </h3>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
+          Generate AI-powered insights to understand key trends, participation, sentiment, and metrics from this meeting.
+        </p>
+        <button
+          onClick={generateInsights}
+          className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+        >
+          Generate Insights
+        </button>
+      </div>
+    );
+  }
+
+  if (isGenerating) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 text-center">
+        <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+          Generating Insights...
+        </h3>
+        <p className="text-gray-600 dark:text-gray-400">
+          AI is analyzing the meeting transcript and creating a comprehensive set of insights.
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 text-center">
+        <div className="w-16 h-16 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto mb-4">
+          <X className="w-8 h-8 text-red-600 dark:text-red-400" />
+        </div>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+          Insights Generation Failed
+        </h3>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
+          {error}
+        </p>
+        <button
+          onClick={generateInsights}
+          className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+          Meeting Insights
+        </h3>
+        <button
+          onClick={generateInsights}
+          disabled={isGenerating}
+          className="flex items-center space-x-2 px-4 py-2 bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 rounded-lg transition-colors disabled:opacity-50"
+        >
+          <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
+          <span>Regenerate</span>
+        </button>
+      </div>
+
+      {/* Insights content */}
+      <div className="p-6">
+        <div className="bg-gray-100 dark:bg-gray-700 rounded-2xl p-6">
+          <MarkdownRenderer
+            content={generatedInsights}
+            className="text-gray-900 dark:text-gray-100"
+          />
+        </div>
+      </div>
     </div>
   );
 };
@@ -925,7 +1082,9 @@ const renderContent = () => {
     case 'chat':
       return <MeetingChatbot meetingId={meetingId} />;
     case 'insights':
-      return <InsightsView meeting={meeting} />;
+      return <InsightsView meeting={meeting.insights} meetingId={meetingId} />;
+    case 'minutes':
+      return <MinutesView minutes={meeting.minutes} meetingId={meetingId} />;
     default:
       return <TranscriptViewer transcript={meeting.transcript} meetingId={meetingId} />;
   }

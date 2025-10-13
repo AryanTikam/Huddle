@@ -469,6 +469,8 @@ try:
     from routes.chatbot import chatbot_bp
     from routes.report import report_bp
     from routes.webrtc import webrtc_bp
+    from routes.minutes import minutes_bp
+    from routes.insights import insights_bp
     
     app.register_blueprint(meetings_bp, url_prefix='/api/meetings')
     app.register_blueprint(recording_bp, url_prefix='/api/recording')
@@ -478,6 +480,8 @@ try:
     app.register_blueprint(chatbot_bp, url_prefix='/api/chatbot')
     app.register_blueprint(report_bp, url_prefix='/api/report')
     app.register_blueprint(webrtc_bp, url_prefix='/api/webrtc')
+    app.register_blueprint(minutes_bp, url_prefix='/api/minutes')
+    app.register_blueprint(insights_bp, url_prefix='/api/insights')
     
     print(f"[DEBUG] ✅ All blueprints registered successfully")
     
