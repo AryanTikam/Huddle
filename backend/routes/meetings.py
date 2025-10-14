@@ -4,7 +4,7 @@ from datetime import datetime
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
 import uuid
-
+ 
 meetings_bp = Blueprint('meetings', __name__)
 
 def get_mongo():
@@ -107,10 +107,14 @@ def get_meeting(meeting_id):
     search_id = meeting.get('id', str(meeting['_id']))
     transcript = db.transcriptions.find_one({'meeting_id': search_id})
     summary = db.summaries.find_one({'meeting_id': search_id})
+    minutes = db.minutes.find_one({'meeting_id': search_id}) # Fetch minutes
+    insights = db.insights.find_one({'meeting_id': search_id}) # Fetch insights
     knowledge_graph = db.knowledge_graphs.find_one({'meeting_id': search_id})
     
     meeting['transcript'] = transcript.get('transcript', '') if transcript else ''
     meeting['summary'] = summary.get('summary', '') if summary else ''
+    meeting['minutes'] = minutes.get('minutes', '') if minutes else '' # Add minutes to response
+    meeting['insights'] = insights.get('insights', '') if insights else '' # Add insights to response
     meeting['knowledge_graph'] = knowledge_graph.get('graph', {}) if knowledge_graph else {}
     
     return jsonify(meeting)

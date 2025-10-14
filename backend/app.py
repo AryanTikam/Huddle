@@ -161,7 +161,7 @@ def on_join_room(data):
         print(f'[SOCKET] Error: No room_id provided')
         emit('error', {'message': 'Room ID is required'})
         return
-    
+     
     # Ensure consistent room ID formatting
     room_id = room_id.upper()
     

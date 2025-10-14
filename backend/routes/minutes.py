@@ -22,6 +22,7 @@ def is_valid_objectid(id_string):
 def generate_meeting_minutes(meeting_id):
     user_id = get_jwt_identity()
     db = get_mongo()
+
     print(f"[DEBUG] Generating minutes for meeting_id: {meeting_id}")
 
     # Query meeting
@@ -82,7 +83,7 @@ def generate_meeting_minutes(meeting_id):
         import traceback
         traceback.print_exc()
         return jsonify({'error': f'Failed to generate minutes: {str(e)}'}), 500
-
+ 
 @minutes_bp.route('/<meeting_id>', methods=['GET'])
 @jwt_required()
 def get_meeting_minutes(meeting_id):

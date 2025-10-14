@@ -42,10 +42,10 @@ const MeetingDetails = ({ meetingId, activeTab, onBack, onTabChange }) => {
   const tabs = [
     { id: 'transcript', label: 'Transcript', icon: FileText },
     { id: 'summary', label: 'Summary', icon: FileText },
+    { id: 'minutes', label: 'Minutes', icon: ClipboardList },
+    { id: 'insights', label: 'Insights', icon: Brain },
     { id: 'knowledge-graph', label: 'Knowledge Graph', icon: Brain },
     { id: 'chat', label: 'AI Chat', icon: MessageSquare },
-    { id: 'insights', label: 'Insights', icon: Brain },
-    { id: 'minutes', label: 'Minutes', icon: ClipboardList }
   ];
 
   useEffect(() => {
@@ -141,32 +141,25 @@ const MeetingDetails = ({ meetingId, activeTab, onBack, onTabChange }) => {
     }
   };
 
-  // Add this helper function at the top level
   const parseDateTime = (dateValue) => {
     if (!dateValue) return null;
     
     try {
       let date;
-      
-      // Handle different date formats from MongoDB
       if (typeof dateValue === 'string') {
-        // Handle ISO strings with or without timezone
         date = new Date(dateValue);
       } else if (dateValue.$date) {
-        // Handle MongoDB $date format
         if (typeof dateValue.$date === 'string') {
           date = new Date(dateValue.$date);
         } else {
           date = new Date(dateValue.$date);
         }
       } else if (typeof dateValue === 'object' && dateValue.getTime) {
-        // Already a Date object
         date = dateValue;
       } else {
         date = new Date(dateValue);
       }
       
-      // Validate the date
       if (isNaN(date.getTime())) {
         console.warn('Invalid date:', dateValue);
         return null;
@@ -179,7 +172,6 @@ const MeetingDetails = ({ meetingId, activeTab, onBack, onTabChange }) => {
     }
   };
 
-  // Update the formatDuration function
   const formatDuration = () => {
     if (!meeting) return 'N/A';
     
@@ -195,7 +187,6 @@ const MeetingDetails = ({ meetingId, activeTab, onBack, onTabChange }) => {
     if (endedAt) {
       endTime = endedAt;
     } else if (meeting.status === 'completed') {
-      // If meeting is completed but no end time, estimate based on typical meeting length
       endTime = new Date(createdAt.getTime() + (60 * 60 * 1000)); // Add 1 hour as default
     } else {
       return 'Ongoing';
@@ -291,6 +282,25 @@ const MeetingDetails = ({ meetingId, activeTab, onBack, onTabChange }) => {
       </div>
     );
   }
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'transcript':
+        return <TranscriptViewer transcript={meeting.transcript} meetingId={meetingId} />;
+      case 'summary':
+        return <SummaryView summary={meeting.summary} meetingId={meetingId} />;
+      case 'knowledge-graph':
+        return <KnowledgeGraphView meeting={meeting} meetingId={meetingId} />;
+      case 'chat':
+        return <MeetingChatbot meetingId={meetingId} />;
+      case 'insights':
+        return <InsightsView insights={meeting.insights} meetingId={meetingId} />;
+      case 'minutes':
+        return <MinutesView minutes={meeting.minutes} meetingId={meetingId} />;
+      default:
+        return <TranscriptViewer transcript={meeting.transcript} meetingId={meetingId} />;
+    }
+  };
 
   return (
     <div className="p-6 space-y-6 animate-fade-in">
@@ -505,29 +515,7 @@ const MeetingDetails = ({ meetingId, activeTab, onBack, onTabChange }) => {
 
         {/* Tab Content */}
         <div className="p-6">
-          {activeTab === 'transcript' && (
-            <TranscriptViewer transcript={meeting.transcript} meetingId={meetingId} />
-          )}
-          
-          {activeTab === 'summary' && (
-            <SummaryView summary={meeting.summary} meetingId={meetingId} />
-          )}
-          
-          {activeTab === 'knowledge-graph' && (
-            <KnowledgeGraphView meeting={meeting} meetingId={meetingId} />
-          )}
-          
-          {activeTab === 'chat' && (
-            <MeetingChatbot meetingId={meetingId} />
-          )}
-          
-          {activeTab === 'insights' && (
-            <InsightsView meeting={meeting} meetingId={meetingId} />
-          )}
-
-          {activeTab === 'minutes' && (
-            <MinutesView minutes={meeting.minutes} meetingId={meetingId} />
-          )}
+          {renderContent()}
         </div>
       </div>
 
@@ -578,7 +566,6 @@ const MeetingDetails = ({ meetingId, activeTab, onBack, onTabChange }) => {
   );
 };
 
-// Updated Summary Component with better styling
 const SummaryView = ({ summary, meetingId }) => {
   const { makeAuthenticatedRequest } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
@@ -590,8 +577,6 @@ const SummaryView = ({ summary, meetingId }) => {
     setError('');
     
     try {
-      console.log('Generating summary for meeting:', meetingId);
-      
       const response = await makeAuthenticatedRequest(`/summary/${meetingId}`, {
         method: 'POST',
         body: JSON.stringify({})
@@ -600,7 +585,6 @@ const SummaryView = ({ summary, meetingId }) => {
       if (response.ok) {
         const data = await response.json();
         setGeneratedSummary(data.summary);
-        console.log('Summary generated successfully');
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to generate summary');
@@ -687,7 +671,6 @@ const SummaryView = ({ summary, meetingId }) => {
         </div>
       </div>
       
-      {/* Summary content with chat bubble styling */}
       <div className="p-6">
         <div className="bg-gray-100 dark:bg-gray-700 rounded-2xl p-6">
           <MarkdownRenderer 
@@ -711,8 +694,6 @@ const MinutesView = ({ minutes, meetingId }) => {
     setError('');
 
     try {
-      console.log('Generating minutes for meeting:', meetingId);
-
       const response = await makeAuthenticatedRequest(`/minutes/${meetingId}`, {
         method: 'POST',
         body: JSON.stringify({}),
@@ -721,7 +702,6 @@ const MinutesView = ({ minutes, meetingId }) => {
       if (response.ok) {
         const data = await response.json();
         setGeneratedMinutes(data.minutes);
-        console.log('Minutes generated successfully');
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to generate minutes');
@@ -816,7 +796,6 @@ const MinutesView = ({ minutes, meetingId }) => {
   );
 };
 
-// Insights Component  
 const InsightsView = ({ insights, meetingId }) => {
   const { makeAuthenticatedRequest } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
@@ -828,8 +807,6 @@ const InsightsView = ({ insights, meetingId }) => {
     setError('');
 
     try {
-      console.log('Generating insights for meeting:', meetingId);
-
       const response = await makeAuthenticatedRequest(`/insights/${meetingId}`, {
         method: 'POST',
         body: JSON.stringify({})
@@ -838,7 +815,6 @@ const InsightsView = ({ insights, meetingId }) => {
       if (response.ok) {
         const data = await response.json();
         setGeneratedInsights(data.insights);
-        console.log('Insights generated successfully');
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to generate insights');
@@ -923,7 +899,6 @@ const InsightsView = ({ insights, meetingId }) => {
         </button>
       </div>
 
-      {/* Insights content */}
       <div className="p-6">
         <div className="bg-gray-100 dark:bg-gray-700 rounded-2xl p-6">
           <MarkdownRenderer
@@ -936,41 +911,6 @@ const InsightsView = ({ insights, meetingId }) => {
   );
 };
 
-export default MeetingDetails;
-
-// Also add a helper function for formatting dates
-const formatDate = (dateValue) => {
-  if (!dateValue) return 'N/A';
-  
-  try {
-    let date;
-    
-    if (typeof dateValue === 'string') {
-      date = new Date(dateValue);
-    } else if (dateValue.$date) {
-      date = new Date(dateValue.$date);
-    } else {
-      date = new Date(dateValue);
-    }
-    
-    if (isNaN(date.getTime())) {
-      return 'N/A';
-    }
-    
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  } catch (error) {
-    console.error('Error formatting date:', error);
-    return 'N/A';
-  }
-};
-
-// Add this component for the Knowledge Graph tab
 const KnowledgeGraphView = ({ meeting, meetingId }) => {
   const [graphData, setGraphData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -987,7 +927,6 @@ const KnowledgeGraphView = ({ meeting, meetingId }) => {
         const data = await response.json();
         setGraphData(data.graph);
       } else if (response.status === 404) {
-        // Try to generate knowledge graph
         await generateKnowledgeGraph();
       } else {
         throw new Error('Failed to fetch knowledge graph');
@@ -1070,22 +1009,35 @@ const KnowledgeGraphView = ({ meeting, meetingId }) => {
   return <KnowledgeGraph graphData={graphData} />;
 };
 
-// Update the renderContent function to include the new component:
-const renderContent = () => {
-  switch (activeTab) {
-    case 'transcript':
-      return <TranscriptViewer transcript={meeting.transcript} meetingId={meetingId} />;
-    case 'summary':
-      return <SummaryView summary={meeting.summary} meetingId={meetingId} />;
-    case 'knowledge-graph':
-      return <KnowledgeGraphView meeting={meeting} meetingId={meetingId} />;
-    case 'chat':
-      return <MeetingChatbot meetingId={meetingId} />;
-    case 'insights':
-      return <InsightsView meeting={meeting.insights} meetingId={meetingId} />;
-    case 'minutes':
-      return <MinutesView minutes={meeting.minutes} meetingId={meetingId} />;
-    default:
-      return <TranscriptViewer transcript={meeting.transcript} meetingId={meetingId} />;
+const formatDate = (dateValue) => {
+  if (!dateValue) return 'N/A';
+  
+  try {
+    let date;
+    
+    if (typeof dateValue === 'string') {
+      date = new Date(dateValue);
+    } else if (dateValue.$date) {
+      date = new Date(dateValue.$date);
+    } else {
+      date = new Date(dateValue);
+    }
+    
+    if (isNaN(date.getTime())) {
+      return 'N/A';
+    }
+    
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'N/A';
   }
 };
+
+export default MeetingDetails; 

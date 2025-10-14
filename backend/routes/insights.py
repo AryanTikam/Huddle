@@ -24,6 +24,7 @@ def is_valid_objectid(id_string):
 def generate_meeting_insights_endpoint(meeting_id):
     user_id = get_jwt_identity()
     db = get_mongo()
+
     
     print(f"[DEBUG] Generating insights for meeting_id: {meeting_id}")
     
@@ -39,7 +40,6 @@ def generate_meeting_insights_endpoint(meeting_id):
         return jsonify({'error': 'Meeting not found'}), 404
     
     print(f"[DEBUG] Found meeting: {meeting.get('id', str(meeting['_id']))}")
-    
     # Get transcript from request or database
     transcript = request.json.get('transcript') if request.json else None
     

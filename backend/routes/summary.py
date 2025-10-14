@@ -24,7 +24,9 @@ def is_valid_objectid(id_string):
 def generate_meeting_summary(meeting_id):
     user_id = get_jwt_identity()
     db = get_mongo()
+
     
+
     print(f"[DEBUG] Generating summary for meeting_id: {meeting_id}")
     
     # Build query based on whether meeting_id is ObjectId or custom ID
