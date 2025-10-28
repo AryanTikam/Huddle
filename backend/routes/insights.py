@@ -4,6 +4,7 @@ from utils.ai import generate_meeting_insights
 from datetime import datetime
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
+import json  # This import was missing!
 
 insights_bp = Blueprint('insights', __name__)
 
@@ -25,7 +26,6 @@ def generate_meeting_insights_endpoint(meeting_id):
     user_id = get_jwt_identity()
     db = get_mongo()
 
-    
     print(f"[DEBUG] Generating insights for meeting_id: {meeting_id}")
     
     # Build query for meeting ownership
@@ -92,7 +92,21 @@ Speaker 3: API documentation and testing environment preparation.
 
     try:
         print(f"[DEBUG] Generating insights...")
-        insights = generate_meeting_insights(transcript)
+        insights_text = generate_meeting_insights(transcript)
+        
+        # Parse JSON response
+        try:
+            insights_json = insights_text.strip()
+            if insights_json.startswith('```json'):
+                insights_json = insights_json[7:]
+            elif insights_json.startswith('```'):
+                insights_json = insights_json[3:]
+            if insights_json.endswith('```'):
+                insights_json = insights_json[:-3]
+            
+            insights_data = json.loads(insights_json.strip())
+        except json.JSONDecodeError:
+            insights_data = {"text": insights_text, "format": "text"}
         
         storage_id = meeting.get('id', meeting_id)
         print(f"[DEBUG] Storing insights with meeting_id: {storage_id}")
@@ -101,13 +115,13 @@ Speaker 3: API documentation and testing environment preparation.
             {'meeting_id': storage_id},
             {'$set': {
                 'meeting_id': storage_id,
-                'insights': insights,
+                'insights': insights_data,
                 'created_at': datetime.utcnow()
             }},
             upsert=True
         )
         print(f"[DEBUG] Insights stored successfully")
-        return jsonify({'insights': insights})
+        return jsonify({'insights': insights_data})
     except Exception as e:
         print(f"Error generating insights: {e}")
         import traceback
@@ -120,6 +134,8 @@ def get_meeting_insights(meeting_id):
     user_id = get_jwt_identity()
     db = get_mongo()
     
+    print(f"[DEBUG] GET insights for meeting_id: {meeting_id}")
+    
     # Build query for meeting ownership
     if is_valid_objectid(meeting_id):
         query = {'$or': [{'id': meeting_id}, {'_id': ObjectId(meeting_id)}], 'user_id': user_id}
@@ -128,9 +144,11 @@ def get_meeting_insights(meeting_id):
     
     meeting = db.meetings.find_one(query)
     if not meeting:
+        print(f"[DEBUG] Meeting not found")
         return jsonify({'error': 'Meeting not found'}), 404
     
     search_id = meeting.get('id', str(meeting['_id']))
+    print(f"[DEBUG] Searching for insights with meeting_id: {search_id}")
     
     doc = db.insights.find_one({'meeting_id': search_id})
     
@@ -142,5 +160,12 @@ def get_meeting_insights(meeting_id):
     
     if doc:
         doc['_id'] = str(doc['_id'])
-        return jsonify(doc)
+        print(f"[DEBUG] Found insights document")
+        print(f"[DEBUG] Insights keys: {doc.keys()}")
+        print(f"[DEBUG] Insights data type: {type(doc.get('insights'))}")
+        
+        # Return the insights field directly, not the whole document
+        return jsonify({'insights': doc.get('insights')})
+    
+    print(f"[DEBUG] No insights found")
     return jsonify({'error': 'Insights not found'}), 404

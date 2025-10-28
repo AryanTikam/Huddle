@@ -4,6 +4,7 @@ from utils.ai import generate_summary
 from datetime import datetime
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
+import json
 
 summary_bp = Blueprint('summary', __name__)
 
@@ -25,8 +26,6 @@ def generate_meeting_summary(meeting_id):
     user_id = get_jwt_identity()
     db = get_mongo()
 
-    
-
     print(f"[DEBUG] Generating summary for meeting_id: {meeting_id}")
     
     # Build query based on whether meeting_id is ObjectId or custom ID
@@ -37,7 +36,7 @@ def generate_meeting_summary(meeting_id):
         }
     else:
         query = {'id': meeting_id, 'user_id': user_id}
-    
+     
     # Verify meeting ownership
     meeting = db.meetings.find_one(query)
     if not meeting:
@@ -137,9 +136,33 @@ Speaker 1 (00:07:00): Great. Let's reconvene next Friday to review our progress.
     
     try:
         print(f"[DEBUG] Generating summary...")
-        summary = generate_summary(transcript)
+        summary_text = generate_summary(transcript)
         
-        # Use the custom ID for storage if available, otherwise use meeting_id
+        print(f"[DEBUG] Raw summary response: {summary_text[:200]}...")  # Print first 200 chars
+        
+        # Parse JSON response
+        try:
+            # Clean response
+            summary_json = summary_text.strip()
+            print(f"[DEBUG] After strip: {summary_json[:200]}...")
+            
+            if summary_json.startswith('```json'):
+                summary_json = summary_json[7:]
+            elif summary_json.startswith('```'):
+                summary_json = summary_json[3:]
+            if summary_json.endswith('```'):
+                summary_json = summary_json[:-3]
+            
+            print(f"[DEBUG] After markdown removal: {summary_json[:200]}...")
+            
+            summary_data = json.loads(summary_json.strip())
+            print(f"[DEBUG] Successfully parsed JSON with keys: {summary_data.keys()}")
+        except json.JSONDecodeError as je:
+            print(f"[DEBUG] JSON parsing failed: {je}")
+            print(f"[DEBUG] Failed text: {summary_json[:500]}")
+            # Fallback to text if JSON parsing fails
+            summary_data = {"text": summary_text, "format": "text"}
+        
         storage_id = meeting.get('id', meeting_id)
         print(f"[DEBUG] Storing summary with meeting_id: {storage_id}")
         
@@ -147,13 +170,13 @@ Speaker 1 (00:07:00): Great. Let's reconvene next Friday to review our progress.
             {'meeting_id': storage_id},
             {'$set': {
                 'meeting_id': storage_id,
-                'summary': summary,
+                'summary': summary_data,
                 'created_at': datetime.utcnow()
             }},
             upsert=True
         )
         print(f"[DEBUG] Summary stored successfully")
-        return jsonify({'summary': summary})
+        return jsonify({'summary': summary_data})
     except Exception as e:
         print(f"Error generating summary: {e}")
         import traceback

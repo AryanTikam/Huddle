@@ -597,6 +597,9 @@ const SummaryView = ({ summary, meetingId }) => {
     }
   };
 
+  // Check if summary is structured JSON or plain text
+  const isStructured = generatedSummary && typeof generatedSummary === 'object' && !generatedSummary.text;
+
   if (!generatedSummary && !isGenerating && !error) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 text-center">
@@ -653,6 +656,182 @@ const SummaryView = ({ summary, meetingId }) => {
     );
   }
 
+  // Render structured summary
+  if (isStructured) {
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Meeting Summary</h3>
+            <button
+              onClick={generateSummary}
+              disabled={isGenerating}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 rounded-lg transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
+              <span>Regenerate</span>
+            </button>
+          </div>
+
+          {/* Metrics */}
+          {generatedSummary.metrics && (
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 text-center">
+                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                  {generatedSummary.metrics.total_topics || 0}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Topics Discussed</div>
+              </div>
+              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 text-center">
+                <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+                  {generatedSummary.metrics.decisions_made || 0}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Decisions Made</div>
+              </div>
+              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 text-center">
+                <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
+                  {generatedSummary.metrics.action_items || 0}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Action Items</div>
+              </div>
+            </div>
+          )}
+
+          {/* Executive Summary */}
+          {generatedSummary.executive_summary && (
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-6 border-l-4 border-blue-500">
+              <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Executive Summary</h4>
+              <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                {generatedSummary.executive_summary}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Key Points */}
+        {generatedSummary.key_points && generatedSummary.key_points.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+            <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+              <FileText className="w-5 h-5 mr-2 text-blue-500" />
+              Key Discussion Points
+            </h4>
+            <div className="space-y-3">
+              {generatedSummary.key_points.map((point, index) => (
+                <div key={index} className="flex items-start space-x-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                  <div className={`w-2 h-2 rounded-full mt-2 ${
+                    point.importance === 'high' ? 'bg-red-500' :
+                    point.importance === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
+                  }`} />
+                  <div className="flex-1">
+                    <p className="text-gray-900 dark:text-white">{point.point}</p>
+                    <span className={`text-xs px-2 py-1 rounded-full mt-1 inline-block ${
+                      point.importance === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
+                      point.importance === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                      'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                    }`}>
+                      {point.importance} priority
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Decisions */}
+        {generatedSummary.decisions && generatedSummary.decisions.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+            <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+              <Check className="w-5 h-5 mr-2 text-green-500" />
+              Decisions Made
+            </h4>
+            <div className="space-y-4">
+              {generatedSummary.decisions.map((decision, index) => (
+                <div key={index} className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border-l-4 border-green-500">
+                  <p className="font-medium text-gray-900 dark:text-white mb-2">{decision.decision}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{decision.context}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Action Items */}
+        {generatedSummary.action_items && generatedSummary.action_items.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+            <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+              <ClipboardList className="w-5 h-5 mr-2 text-purple-500" />
+              Action Items
+            </h4>
+            <div className="space-y-3">
+              {generatedSummary.action_items.map((item, index) => (
+                <div key={index} className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:shadow-md transition-shadow">
+                  <div className="flex items-start justify-between mb-2">
+                    <p className="font-medium text-gray-900 dark:text-white flex-1">{item.task}</p>
+                    <span className={`text-xs px-2 py-1 rounded-full ml-2 ${
+                      item.priority === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
+                      item.priority === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                      'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                    }`}>
+                      {item.priority}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                    <span className="flex items-center">
+                      <Users className="w-4 h-4 mr-1" />
+                      {item.owner}
+                    </span>
+                    <span className="flex items-center">
+                      <Clock className="w-4 h-4 mr-1" />
+                      {item.deadline}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Next Steps */}
+        {generatedSummary.next_steps && generatedSummary.next_steps.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+            <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Next Steps</h4>
+            <div className="space-y-2">
+              {generatedSummary.next_steps.map((step, index) => (
+                <div key={index} className="flex items-center space-x-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-semibold">
+                    {index + 1}
+                  </div>
+                  <p className="text-gray-900 dark:text-white">{step}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Key Quotes */}
+        {generatedSummary.key_quotes && generatedSummary.key_quotes.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+            <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+              <MessageSquare className="w-5 h-5 mr-2 text-indigo-500" />
+              Notable Quotes
+            </h4>
+            <div className="space-y-4">
+              {generatedSummary.key_quotes.map((quote, index) => (
+                <div key={index} className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border-l-4 border-indigo-500">
+                  <p className="text-gray-900 dark:text-white italic mb-2">"{quote.quote}"</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">— {quote.speaker}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Fallback to markdown renderer
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
@@ -714,6 +893,8 @@ const MinutesView = ({ minutes, meetingId }) => {
     }
   };
 
+  const isStructured = generatedMinutes && typeof generatedMinutes === 'object' && !generatedMinutes.text;
+
   if (!generatedMinutes && !isGenerating && !error) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 text-center">
@@ -768,20 +949,251 @@ const MinutesView = ({ minutes, meetingId }) => {
     );
   }
 
+  if (isStructured) {
+    const meetingInfo = generatedMinutes.meeting_info || {};
+    
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-3xl font-bold">Minutes of Meeting</h3>
+            <button
+              onClick={generateMinutes}
+              disabled={isGenerating}
+              className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
+              <span>Regenerate</span>
+            </button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            {meetingInfo.date && (
+              <div>
+                <div className="opacity-80">Date</div>
+                <div className="font-semibold">{meetingInfo.date}</div>
+              </div>
+            )}
+            {meetingInfo.time && (
+              <div>
+                <div className="opacity-80">Time</div>
+                <div className="font-semibold">{meetingInfo.time}</div>
+              </div>
+            )}
+            {meetingInfo.duration && (
+              <div>
+                <div className="opacity-80">Duration</div>
+                <div className="font-semibold">{meetingInfo.duration}</div>
+              </div>
+            )}
+            {meetingInfo.location && (
+              <div>
+                <div className="opacity-80">Location</div>
+                <div className="font-semibold">{meetingInfo.location}</div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Attendees */}
+        {generatedMinutes.attendees && generatedMinutes.attendees.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+            <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+              <Users className="w-5 h-5 mr-2 text-blue-500" />
+              Attendees
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {generatedMinutes.attendees.map((attendee, index) => (
+                <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900 dark:text-white">{attendee.name}</div>
+                    {attendee.role && (
+                      <div className="text-sm text-gray-600 dark:text-gray-400">{attendee.role}</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Agenda Items */}
+        {generatedMinutes.agenda_items && generatedMinutes.agenda_items.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+            <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Agenda</h4>
+            <div className="space-y-3">
+              {generatedMinutes.agenda_items.map((item, index) => (
+                <div key={index} className="flex items-start space-x-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                  <div className="w-6 h-6 rounded-full bg-purple-500 text-white flex items-center justify-center text-sm font-semibold flex-shrink-0">
+                    {index + 1}
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900 dark:text-white mb-1">{item.item}</div>
+                    <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                      {item.duration && <span>⏱️ {item.duration}</span>}
+                      {item.presenter && <span>👤 {item.presenter}</span>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Discussion Points */}
+        {generatedMinutes.discussion_points && generatedMinutes.discussion_points.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+            <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+              <MessageSquare className="w-5 h-5 mr-2 text-green-500" />
+              Discussion Points
+            </h4>
+            <div className="space-y-4">
+              {generatedMinutes.discussion_points.map((point, index) => (
+                <div key={index} className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                  <div className="flex items-start justify-between mb-2">
+                    <h5 className="font-semibold text-gray-900 dark:text-white">{point.topic}</h5>
+                    {point.presenter && (
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">
+                        {point.presenter}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-gray-700 dark:text-gray-300 mb-3">{point.summary}</p>
+                  {point.key_points && point.key_points.length > 0 && (
+                    <ul className="space-y-1">
+                      {point.key_points.map((kp, kpIndex) => (
+                        <li key={kpIndex} className="text-sm text-gray-600 dark:text-gray-400 flex items-start">
+                          <span className="mr-2">•</span>
+                          <span>{kp}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Decisions */}
+        {generatedMinutes.decisions && generatedMinutes.decisions.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+            <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+              <Check className="w-5 h-5 mr-2 text-green-500" />
+              Decisions Made
+            </h4>
+            <div className="space-y-4">
+              {generatedMinutes.decisions.map((decision, index) => (
+                <div key={index} className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border-l-4 border-green-500">
+                  <p className="font-semibold text-gray-900 dark:text-white mb-2">{decision.decision}</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">{decision.rationale}</p>
+                  <div className="flex items-center space-x-4 text-xs text-gray-600 dark:text-gray-400">
+                    {decision.decision_maker && <span>👤 {decision.decision_maker}</span>}
+                    {decision.affected_parties && decision.affected_parties.length > 0 && (
+                      <span>📋 Affects: {decision.affected_parties.join(', ')}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Action Items */}
+        {generatedMinutes.action_items && generatedMinutes.action_items.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+            <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+              <ClipboardList className="w-5 h-5 mr-2 text-orange-500" />
+              Action Items
+            </h4>
+            <div className="space-y-3">
+              {generatedMinutes.action_items.map((item, index) => (
+                <div key={index} className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:shadow-md transition-shadow">
+                  <div className="flex items-start justify-between mb-2">
+                    <p className="font-medium text-gray-900 dark:text-white flex-1">{item.task}</p>
+                    <span className={`text-xs px-2 py-1 rounded-full ml-2 ${
+                      item.priority === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
+                      item.priority === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                      'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                    }`}>
+                      {item.priority}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                    <span>👤 {item.assignee}</span>
+                    <span>📅 {item.deadline}</span>
+                    <span className={`px-2 py-0.5 rounded ${
+                      item.status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :
+                      'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                    }`}>
+                      {item.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Parking Lot */}
+        {generatedMinutes.parking_lot && generatedMinutes.parking_lot.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+            <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Parking Lot</h4>
+            <div className="space-y-2">
+              {generatedMinutes.parking_lot.map((item, index) => (
+                <div key={index} className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border-l-2 border-yellow-500">
+                  <p className="text-gray-900 dark:text-white">{item}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Next Meeting */}
+        {generatedMinutes.next_meeting && generatedMinutes.next_meeting.scheduled && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+            <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+              <Calendar className="w-5 h-5 mr-2 text-blue-500" />
+              Next Meeting
+            </h4>
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              {generatedMinutes.next_meeting.date && (
+                <p className="font-medium text-gray-900 dark:text-white mb-2">
+                  📅 {generatedMinutes.next_meeting.date}
+                </p>
+              )}
+              {generatedMinutes.next_meeting.agenda && (
+                <p className="text-gray-700 dark:text-gray-300">
+                  {generatedMinutes.next_meeting.agenda}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Fallback to markdown renderer
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-          Minutes of Meeting
-        </h3>
-        <button
-          onClick={generateMinutes}
-          disabled={isGenerating}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 rounded-lg transition-colors disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
-          <span>Regenerate</span>
-        </button>
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+            Minutes of Meeting
+          </h3>
+          <button
+            onClick={generateMinutes}
+            disabled={isGenerating}
+            className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
+            <span>Regenerate</span>
+          </button>
+        </div>
       </div>
 
       <div className="p-6">
@@ -807,25 +1219,47 @@ const InsightsView = ({ insights, meetingId }) => {
     setError('');
 
     try {
+      console.log('[DEBUG] Generating insights for meeting:', meetingId);
       const response = await makeAuthenticatedRequest(`/insights/${meetingId}`, {
         method: 'POST',
         body: JSON.stringify({})
       });
 
+      console.log('[DEBUG] Response status:', response.status);
+      const data = await response.json();
+      console.log('[DEBUG] Response data:', data);
+
       if (response.ok) {
-        const data = await response.json();
+        console.log('[DEBUG] Insights data:', data.insights);
+        console.log('[DEBUG] Insights type:', typeof data.insights);
+        console.log('[DEBUG] Is object?', data.insights && typeof data.insights === 'object');
+        console.log('[DEBUG] Has text field?', data.insights?.text);
+        
         setGeneratedInsights(data.insights);
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate insights');
+        throw new Error(data.error || 'Failed to generate insights');
       }
     } catch (error) {
-      console.error('Error generating insights:', error);
+      console.error('[DEBUG] Error generating insights:', error);
       setError(error.message);
     } finally {
       setIsGenerating(false);
     }
   };
+
+  // Enhanced debugging for insights structure
+  console.log('[DEBUG] Current insights:', generatedInsights);
+  console.log('[DEBUG] Insights type:', typeof generatedInsights);
+  console.log('[DEBUG] Is object?', generatedInsights && typeof generatedInsights === 'object');
+  console.log('[DEBUG] Has text field?', generatedInsights?.text);
+  console.log('[DEBUG] Has overview field?', generatedInsights?.overview);
+
+  const isStructured = generatedInsights && 
+                       typeof generatedInsights === 'object' && 
+                       !generatedInsights.text &&
+                       generatedInsights.format !== 'text';
+
+  console.log('[DEBUG] isStructured:', isStructured);
 
   if (!generatedInsights && !isGenerating && !error) {
     return (
@@ -883,26 +1317,333 @@ const InsightsView = ({ insights, meetingId }) => {
     );
   }
 
+  if (isStructured) {
+    const overview = generatedInsights.overview || {};
+    
+    return (
+      <div className="space-y-6">
+        {/* Overview Card */}
+        <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl p-6 text-white shadow-lg">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-2xl font-bold">Meeting Insights</h3>
+            <button
+              onClick={generateInsights}
+              disabled={isGenerating}
+              className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
+              <span>Regenerate</span>
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
+              <div className="text-3xl font-bold mb-1">{overview.meeting_effectiveness_score || 'N/A'}/10</div>
+              <div className="text-sm opacity-90">Effectiveness Score</div>
+            </div>
+            <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
+              <div className="text-3xl font-bold mb-1 capitalize">{overview.overall_sentiment || 'N/A'}</div>
+              <div className="text-sm opacity-90">Overall Sentiment</div>
+            </div>
+            <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
+              <div className="text-3xl font-bold mb-1 capitalize">{overview.engagement_level || 'N/A'}</div>
+              <div className="text-sm opacity-90">Engagement Level</div>
+            </div>
+            <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
+              <div className="text-3xl font-bold mb-1">{generatedInsights.key_themes?.length || 0}</div>
+              <div className="text-sm opacity-90">Key Themes</div>
+            </div>
+          </div>
+          
+          {overview.summary && (
+            <p className="mt-4 text-white/90 leading-relaxed">{overview.summary}</p>
+          )}
+        </div>
+
+        {/* Key Themes */}
+        {generatedInsights.key_themes && generatedInsights.key_themes.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+            <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+              <Brain className="w-5 h-5 mr-2 text-purple-500" />
+              Key Themes & Patterns
+            </h4>
+            <div className="space-y-3">
+              {generatedInsights.key_themes.map((theme, index) => (
+                <div key={index} className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border-l-4 border-purple-500">
+                  <div className="flex items-start justify-between mb-2">
+                    <h5 className="font-semibold text-gray-900 dark:text-white">{theme.theme}</h5>
+                    <div className="flex items-center space-x-2">
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        theme.importance === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
+                        theme.importance === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                        'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                      }`}>
+                        {theme.importance}
+                      </span>
+                      <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded">
+                        {theme.frequency}x
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">{theme.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Participation Analysis */}
+        {generatedInsights.participation_analysis && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+            <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+              <Users className="w-5 h-5 mr-2 text-blue-500" />
+              Participation Analysis
+            </h4>
+            
+            {generatedInsights.participation_analysis.most_active_speakers && generatedInsights.participation_analysis.most_active_speakers.length > 0 && (
+              <div className="mb-4">
+                <h5 className="font-medium text-gray-900 dark:text-white mb-3">Most Active Speakers</h5>
+                <div className="space-y-2">
+                  {generatedInsights.participation_analysis.most_active_speakers.map((speaker, index) => (
+                    <div key={index} className="flex items-center space-x-3">
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-8 relative overflow-hidden">
+                        <div 
+                          className="bg-blue-500 h-full rounded-full flex items-center px-3"
+                          style={{ width: `${speaker.contribution_percentage}%` }}
+                        >
+                          <span className="text-white text-sm font-medium">{speaker.name}</span>
+                        </div>
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                          {speaker.contribution_percentage}%
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              {generatedInsights.participation_analysis.speaking_distribution && (
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Distribution</div>
+                  <div className="font-semibold text-gray-900 dark:text-white capitalize">
+                    {generatedInsights.participation_analysis.speaking_distribution}
+                  </div>
+                </div>
+              )}
+              {generatedInsights.participation_analysis.quiet_participants && (
+                <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Quiet Participants</div>
+                  <div className="font-semibold text-gray-900 dark:text-white">
+                    {generatedInsights.participation_analysis.quiet_participants.join(', ') || 'None'}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Sentiment Analysis */}
+        {generatedInsights.sentiment_analysis && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+            <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+              <MessageSquare className="w-5 h-5 mr-2 text-green-500" />
+              Sentiment Analysis
+            </h4>
+            
+            <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Overall Tone</div>
+              <div className={`text-2xl font-bold capitalize ${
+                generatedInsights.sentiment_analysis.overall_tone === 'positive' ? 'text-green-600 dark:text-green-400' :
+                generatedInsights.sentiment_analysis.overall_tone === 'negative' ? 'text-red-600 dark:text-red-400' :
+                'text-yellow-600 dark:text-yellow-400'
+              }`}>
+                {generatedInsights.sentiment_analysis.overall_tone}
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {generatedInsights.sentiment_analysis.positive_moments && generatedInsights.sentiment_analysis.positive_moments.length > 0 && (
+                <div>
+                  <h5 className="font-medium text-gray-900 dark:text-white mb-3">Positive Moments</h5>
+                  <div className="space-y-2">
+                    {generatedInsights.sentiment_analysis.positive_moments.map((moment, index) => (
+                      <div key={index} className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-sm">
+                        <p className="text-gray-900 dark:text-white">{moment.moment}</p>
+                        {moment.timestamp && (
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{moment.timestamp}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {generatedInsights.sentiment_analysis.concerns_raised && generatedInsights.sentiment_analysis.concerns_raised.length > 0 && (
+                <div>
+                  <h5 className="font-medium text-gray-900 dark:text-white mb-2">Concerns Raised</h5>
+                  <div className="space-y-2">
+                    {generatedInsights.sentiment_analysis.concerns_raised.map((concern, index) => (
+                      <div key={index} className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-sm">
+                        <p className="text-gray-900 dark:text-white">{concern.concern}</p>
+                        <span className={`text-xs px-2 py-0.5 rounded mt-1 inline-block ${
+                          concern.severity === 'high' ? 'bg-red-200 text-red-800 dark:bg-red-800 dark:text-red-200' :
+                          concern.severity === 'medium' ? 'bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200' :
+                          'bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200'
+                        }`}>
+                          {concern.severity} severity
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Agreements */}
+            {generatedInsights.sentiment_analysis.agreements && generatedInsights.sentiment_analysis.agreements.length > 0 && (
+              <div className="mt-4">
+                <h5 className="font-medium text-gray-900 dark:text-white mb-2">Agreements Reached</h5>
+                <div className="space-y-2">
+                  {generatedInsights.sentiment_analysis.agreements.map((agreement, index) => (
+                    <div key={index} className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-start space-x-2">
+                      <Check className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                      <p className="text-sm text-gray-900 dark:text-white">{agreement}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Conflicts */}
+            {generatedInsights.sentiment_analysis.conflicts && generatedInsights.sentiment_analysis.conflicts.length > 0 && (
+              <div className="mt-4">
+                <h5 className="font-medium text-gray-900 dark:text-white mb-2">Conflicts/Disagreements</h5>
+                <div className="space-y-2">
+                  {generatedInsights.sentiment_analysis.conflicts.map((conflict, index) => (
+                    <div key={index} className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg flex items-start space-x-2">
+                      <X className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
+                      <p className="text-sm text-gray-900 dark:text-white">{conflict}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Follow-up Recommendations */}
+        {generatedInsights.follow_up_recommendations && generatedInsights.follow_up_recommendations.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+            <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Follow-up Recommendations</h4>
+            <div className="space-y-3">
+              {generatedInsights.follow_up_recommendations.map((rec, index) => (
+                <div key={index} className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border-l-4 border-indigo-500">
+                  <div className="flex items-start justify-between mb-2">
+                    <p className="font-medium text-gray-900 dark:text-white flex-1">{rec.recommendation}</p>
+                    <span className={`text-xs px-2 py-1 rounded ml-2 ${
+                      rec.priority === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
+                      rec.priority === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                      'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                    }`}>
+                      {rec.priority}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{rec.rationale}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Risks and Concerns */}
+        {generatedInsights.risks_and_concerns && generatedInsights.risks_and_concerns.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+            <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+              ⚠️ Risks & Concerns
+            </h4>
+            <div className="space-y-3">
+              {generatedInsights.risks_and_concerns.map((risk, index) => (
+                <div key={index} className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border-l-4 border-red-500">
+                  <div className="flex items-start justify-between mb-2">
+                    <p className="font-medium text-gray-900 dark:text-white flex-1">{risk.risk}</p>
+                    <span className={`text-xs px-2 py-1 rounded ml-2 ${
+                      risk.impact === 'high' ? 'bg-red-200 text-red-800 dark:bg-red-800 dark:text-red-200' :
+                      risk.impact === 'medium' ? 'bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200' :
+                      'bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200'
+                    }`}>
+                      {risk.impact} impact
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    <span className="font-medium">Mitigation:</span> {risk.mitigation}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Interesting Observations */}
+        {generatedInsights.interesting_observations && generatedInsights.interesting_observations.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+            <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">💡 Interesting Observations</h4>
+            <div className="space-y-2">
+              {generatedInsights.interesting_observations.map((obs, index) => (
+                <div key={index} className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                  <p className="text-gray-900 dark:text-white">{obs}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Key Metrics */}
+        {generatedInsights.key_metrics && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+            <h4 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">📊 Key Metrics</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {Object.entries(generatedInsights.key_metrics).map(([key, value]) => (
+                <div key={key} className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-center">
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white mb-1 capitalize">
+                    {value}
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400 capitalize">
+                    {key.replace(/_/g, ' ')}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Fallback to markdown renderer - FIX: Remove the incorrect nested structure
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-          Meeting Insights
-        </h3>
-        <button
-          onClick={generateInsights}
-          disabled={isGenerating}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 rounded-lg transition-colors disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
-          <span>Regenerate</span>
-        </button>
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+            Meeting Insights
+          </h3>
+          <button
+            onClick={generateInsights}
+            disabled={isGenerating}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 rounded-lg transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
+            <span>Regenerate</span>
+          </button>
+        </div>
       </div>
 
       <div className="p-6">
         <div className="bg-gray-100 dark:bg-gray-700 rounded-2xl p-6">
-          <MarkdownRenderer
-            content={generatedInsights}
+          <MarkdownRenderer 
+            content={typeof generatedInsights === 'string' ? generatedInsights : (generatedInsights?.text || JSON.stringify(generatedInsights, null, 2))} 
             className="text-gray-900 dark:text-gray-100"
           />
         </div>
@@ -1040,4 +1781,4 @@ const formatDate = (dateValue) => {
   }
 };
 
-export default MeetingDetails; 
+export default MeetingDetails;

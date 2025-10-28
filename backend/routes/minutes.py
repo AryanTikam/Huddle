@@ -4,6 +4,7 @@ from utils.ai import generate_minutes_of_meeting
 from datetime import datetime
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
+import json  # This import was missing!
 
 minutes_bp = Blueprint('minutes', __name__)
 
@@ -25,7 +26,7 @@ def generate_meeting_minutes(meeting_id):
 
     print(f"[DEBUG] Generating minutes for meeting_id: {meeting_id}")
 
-    # Query meeting
+    # Query meeting 
     if is_valid_objectid(meeting_id):
         query = {'$or': [{'id': meeting_id}, {'_id': ObjectId(meeting_id)}], 'user_id': user_id}
     else:
@@ -67,18 +68,33 @@ def generate_meeting_minutes(meeting_id):
         return jsonify({'error': 'Empty transcript'}), 400
 
     try:
-        minutes = generate_minutes_of_meeting(transcript)
+        minutes_text = generate_minutes_of_meeting(transcript)
+        
+        # Parse JSON response
+        try:
+            minutes_json = minutes_text.strip()
+            if minutes_json.startswith('```json'):
+                minutes_json = minutes_json[7:]
+            elif minutes_json.startswith('```'):
+                minutes_json = minutes_json[3:]
+            if minutes_json.endswith('```'):
+                minutes_json = minutes_json[:-3]
+            
+            minutes_data = json.loads(minutes_json.strip())
+        except json.JSONDecodeError:
+            minutes_data = {"text": minutes_text, "format": "text"}
+        
         storage_id = meeting.get('id', meeting_id)
         db.minutes.update_one(
             {'meeting_id': storage_id},
             {'$set': {
                 'meeting_id': storage_id,
-                'minutes': minutes,
+                'minutes': minutes_data,
                 'created_at': datetime.utcnow()
             }},
             upsert=True
         )
-        return jsonify({'minutes': minutes})
+        return jsonify({'minutes': minutes_data})
     except Exception as e:
         import traceback
         traceback.print_exc()

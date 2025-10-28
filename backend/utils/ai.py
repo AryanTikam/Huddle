@@ -97,24 +97,40 @@ Answer:"""
         return "I'm having trouble processing your question right now. Please try again."
 
 def generate_summary(transcript):
-    """Generate meeting summary - only chunk if necessary"""
+    """Generate meeting summary in structured JSON format"""
     if not should_chunk_transcript(transcript):
-        # Process as single document
         model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content(
-            f"""Analyze this meeting transcript and provide a comprehensive summary:
+            f"""Analyze this meeting transcript and provide a comprehensive summary in valid JSON format.
 
 Transcript: {transcript}
 
-Provide:
-1. **Executive Summary** (2-3 sentences)
-2. **Key Discussion Points** (bullet points)
-3. **Decisions Made** (if any)
-4. **Action Items** (with owners if mentioned)
-5. **Next Steps** (if discussed)
-6. **Important Quotes** (if any stand out)
-
-Format the response clearly with headers and bullet points."""
+Return ONLY valid JSON (no markdown, no code blocks) with this exact structure:
+{{
+    "executive_summary": "2-3 sentence overview of the meeting",
+    "key_points": [
+        {{"point": "First key discussion point", "importance": "high"}},
+        {{"point": "Second key discussion point", "importance": "medium"}}
+    ],
+    "decisions": [
+        {{"decision": "Decision made", "context": "Why this decision was made"}}
+    ],
+    "action_items": [
+        {{"task": "Action item description", "owner": "Person responsible", "deadline": "Timeframe or date", "priority": "high"}}
+    ],
+    "next_steps": [
+        "First next step",
+        "Second next step"
+    ],
+    "key_quotes": [
+        {{"quote": "Important statement from meeting", "speaker": "Speaker name or role"}}
+    ],
+    "metrics": {{
+        "total_topics": 5,
+        "decisions_made": 3,
+        "action_items": 4
+    }}
+}}"""
         )
         return response.text
     
@@ -125,32 +141,22 @@ Format the response clearly with headers and bullet points."""
     for i, chunk in enumerate(chunks):
         model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content(
-            f"""Analyze this meeting transcript chunk ({i+1}/{len(chunks)}) and provide:
-            1. Key discussion points
-            2. Decisions made
-            3. Action items
-            4. Important participants mentioned
+            f"""Analyze this meeting transcript chunk and extract key information in JSON:
             
-            Transcript chunk: {chunk}"""
+            Transcript chunk: {chunk}
+            
+            Return valid JSON with: key_points, decisions, action_items"""
         )
         summaries.append(response.text)
     
-    # Combine chunk summaries
+    # Combine summaries
     final_model = genai.GenerativeModel("gemini-2.5-flash")
     final_summary = final_model.generate_content(
-        f"""Create a comprehensive meeting summary from these chunk summaries:
+        f"""Combine these chunk summaries into a final structured summary in valid JSON format:
         
         {chr(10).join(summaries)}
         
-        Provide:
-        1. **Executive Summary** (2-3 sentences)
-        2. **Key Discussion Points** (consolidated bullet points)
-        3. **Decisions Made** (consolidated)
-        4. **Action Items** (with owners, consolidated)
-        5. **Next Steps** (consolidated)
-        6. **Important Quotes** (best ones from all chunks)
-        
-        Format clearly with headers and remove any duplicates."""
+        Return the same JSON structure as specified earlier."""
     )
     return final_summary.text
 
@@ -432,132 +438,168 @@ def translate_transcript(transcript, target_language):
         return response.text
 
 def generate_meeting_insights(transcript):
-    """Generate comprehensive meeting insights with unique points only - chunk if necessary"""
+    """Generate comprehensive meeting insights in structured JSON format"""
     
     if not should_chunk_transcript(transcript):
-        # Process as single document
         model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content(
-            f"""Analyze this meeting transcript and provide actionable insights:
+            f"""Analyze this meeting transcript and provide actionable insights in valid JSON format.
 
 Transcript: {transcript}
 
-Provide **unique points only**:
-1. **Key Themes & Patterns**
-2. **Participation Analysis** (who spoke most, engagement levels)
-3. **Follow-up Recommendations** (what should happen next)
-4. **Sentiment Analysis** (overall tone, conflicts/agreements)
-5. **Interesting Observations**
-6. **Risks or Concerns**
-7. **Meeting Effectiveness Score** (1-10 with reasoning)
-8. **Key Metrics** (duration insights, decision velocity, etc.)
-
-Format clearly with headers and bullet points."""
+Return ONLY valid JSON (no markdown, no code blocks) with this exact structure:
+{{
+    "overview": {{
+        "meeting_effectiveness_score": 8,
+        "overall_sentiment": "positive",
+        "engagement_level": "high",
+        "summary": "Brief overview of meeting effectiveness"
+    }},
+    "key_themes": [
+        {{"theme": "Theme name", "frequency": 5, "importance": "high", "description": "What this theme covers"}}
+    ],
+    "participation_analysis": {{
+        "most_active_speakers": [
+            {{"name": "Speaker name", "contribution_percentage": 35, "engagement": "high"}}
+        ],
+        "speaking_distribution": "balanced",
+        "quiet_participants": ["Name1", "Name2"]
+    }},
+    "sentiment_analysis": {{
+        "overall_tone": "positive",
+        "positive_moments": [
+            {{"moment": "Description of positive moment", "timestamp": "approximate time"}}
+        ],
+        "concerns_raised": [
+            {{"concern": "Concern description", "severity": "medium"}}
+        ],
+        "agreements": ["Agreement 1", "Agreement 2"],
+        "conflicts": []
+    }},
+    "follow_up_recommendations": [
+        {{"recommendation": "What should be done", "priority": "high", "rationale": "Why this is important"}}
+    ],
+    "risks_and_concerns": [
+        {{"risk": "Risk description", "impact": "high", "mitigation": "Suggested mitigation strategy"}}
+    ],
+    "interesting_observations": [
+        "Notable observation 1",
+        "Notable observation 2"
+    ],
+    "key_metrics": {{
+        "topics_discussed": 8,
+        "decisions_velocity": "high",
+        "action_items_clarity": "clear",
+        "time_management": "excellent"
+    }}
+}}"""
         )
         return response.text
 
-    # Handle large transcripts with chunking
+    # Handle large transcripts
     chunks = chunk_transcript(transcript)
     insights_list = []
 
     for i, chunk in enumerate(chunks):
         model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content(
-            f"""Analyze this meeting transcript chunk ({i+1}/{len(chunks)}) and provide **unique points only**:
-1. Key themes and patterns
-2. Participant engagement highlights
-3. Opportunities and suggestions
-4. Risks or concerns
-5. Notable observations
-6. Meeting effectiveness score (1-10 with reasoning)
-7. Participation analysis (who spoke most, engagement)
-8. Sentiment analysis (tone, conflicts/agreements)
-9. Follow-up recommendations
-10. Key metrics (duration insights, decision velocity)
-
-Transcript chunk: {chunk}"""
+            f"""Analyze this chunk and extract insights in JSON format:
+            
+            Transcript chunk: {chunk}"""
         )
         insights_list.append(response.text)
 
-    # Consolidate chunk insights, keeping only unique points
     final_model = genai.GenerativeModel("gemini-2.5-flash")
     final_insights = final_model.generate_content(
-        f"""Create a consolidated set of **unique meeting insights** from these chunk analyses:
-
-{chr(10).join(insights_list)}
-
-Provide:
-1. **Key Themes & Patterns**
-2. **Participation Analysis** (who spoke most, engagement levels)
-3. **Sentiment Analysis** (overall tone, any conflicts/agreements)
-4. **Follow-up Recommendations** (what should happen next)
-5. **Risks or Concerns**
-6. **Interesting Observations**
-7. **Meeting Effectiveness Score** (1-10 with reasoning)
-8. **Key Metrics** (duration insights, decision velocity, etc.)
-
-Format clearly with headers and bullet points. Remove any duplicate entries."""
+        f"""Combine these insights into final structured JSON:
+        
+        {chr(10).join(insights_list)}
+        
+        Return the same JSON structure as specified earlier."""
     )
     return final_insights.text
 
 def generate_minutes_of_meeting(transcript):
-    """Generate Minutes of Meeting - handle large transcripts with chunking"""
+    """Generate Minutes of Meeting in structured JSON format"""
     if not should_chunk_transcript(transcript):
-        # Process as single document
         model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content(
-            f"""Analyze the following meeting transcript and generate the Minutes of Meeting (MoM).
+            f"""Analyze the meeting transcript and generate Minutes of Meeting in valid JSON format.
 
 Transcript: {transcript}
 
-Please format the output in Markdown with the following sections:
-- **Meeting Title**: (Suggest a concise title)
-- **Date**: (Extract the date if available, otherwise use today's date)
-- **Attendees**: (List participants if mentioned)
-- **Agenda**: (Infer the main topics discussed)
-- **Discussion Points**: (Summarize the key conversations)
-- **Decisions Made**: (List any definite conclusions or agreements)
-- **Action Items**: (List tasks, assignees, and deadlines if mentioned)
-
-Ensure the output is well-structured, clear, and easy to read."""
+Return ONLY valid JSON (no markdown, no code blocks) with this exact structure:
+{{
+    "meeting_info": {{
+        "title": "Suggested meeting title",
+        "date": "Inferred or today's date",
+        "time": "Meeting time if available",
+        "duration": "Estimated duration",
+        "location": "Physical or virtual location if mentioned"
+    }},
+    "attendees": [
+        {{"name": "Participant name", "role": "Their role if mentioned", "present": true}}
+    ],
+    "agenda_items": [
+        {{"item": "Agenda topic", "duration": "Time spent", "presenter": "Who led this topic"}}
+    ],
+    "discussion_points": [
+        {{
+            "topic": "Discussion topic",
+            "summary": "What was discussed",
+            "key_points": ["Point 1", "Point 2"],
+            "presenter": "Who presented"
+        }}
+    ],
+    "decisions": [
+        {{
+            "decision": "Decision made",
+            "rationale": "Why this decision was made",
+            "decision_maker": "Who made the decision",
+            "affected_parties": ["Party 1", "Party 2"]
+        }}
+    ],
+    "action_items": [
+        {{
+            "task": "Task description",
+            "assignee": "Person responsible",
+            "deadline": "Due date or timeframe",
+            "priority": "high",
+            "status": "pending",
+            "dependencies": []
+        }}
+    ],
+    "parking_lot": [
+        "Items tabled for future discussion"
+    ],
+    "next_meeting": {{
+        "scheduled": true,
+        "date": "Next meeting date if mentioned",
+        "agenda": "Planned topics for next meeting"
+    }}
+}}"""
         )
         return response.text
 
-    # Handle large transcripts with chunking
+    # Handle large transcripts
     chunks = chunk_transcript(transcript)
     chunk_minutes = []
 
     for i, chunk in enumerate(chunks):
         model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content(
-            f"""Analyze this meeting transcript chunk ({i+1}/{len(chunks)}) and generate the Minutes of Meeting:
-- **Discussion Points**
-- **Decisions Made**
-- **Action Items**
-
-Transcript chunk:
-{chunk}"""
+            f"""Extract meeting minutes data from this chunk in JSON format:
+            
+            Transcript chunk: {chunk}"""
         )
         chunk_minutes.append(response.text)
 
-    # Combine chunk minutes into a final MoM
     final_model = genai.GenerativeModel("gemini-2.5-flash")
     final_mom = final_model.generate_content(
-        f"""Combine these chunk-level Minutes of Meeting into a single comprehensive MoM:
-
-{chr(10).join(chunk_minutes)}
-
-Please produce:
-- **Meeting Title**
-- **Date**
-- **Attendees**
-- **Agenda**
-- **Discussion Points** (consolidated)
-- **Decisions Made** (consolidated)
-- **Action Items** (consolidated with assignees if mentioned)
-
-Ensure formatting is in Markdown, clear, and remove any duplicates."""
+        f"""Combine these chunks into final Minutes of Meeting in JSON:
+        
+        {chr(10).join(chunk_minutes)}
+        
+        Return the same JSON structure as specified earlier."""
     )
-
     return final_mom.text
- 
