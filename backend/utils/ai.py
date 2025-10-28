@@ -4,12 +4,41 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from typing import List
 
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=GEMINI_API_KEY)
+
+# Custom embedding class to avoid langchain-google-genai compatibility issues
+class GoogleGenerativeAIEmbeddings:
+    def __init__(self, model="models/embedding-001", google_api_key=None):
+        self.model = model
+        self.google_api_key = google_api_key or GEMINI_API_KEY
+        
+    def embed_documents(self, texts):
+        """Embed a list of documents"""
+        if isinstance(texts, str):
+            texts = [texts]
+        
+        embeddings = []
+        for text in texts:
+            result = genai.embed_content(
+                model=self.model,
+                content=text,
+                task_type="retrieval_document"
+            )
+            embeddings.append(result['embedding'])
+        return embeddings
+    
+    def embed_query(self, text):
+        """Embed a single query"""
+        result = genai.embed_content(
+            model=self.model,
+            content=text,
+            task_type="retrieval_query"
+        )
+        return result['embedding']
 
 # Initialize embeddings
 embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=GEMINI_API_KEY)

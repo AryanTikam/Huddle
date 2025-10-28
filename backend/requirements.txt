@@ -6,8 +6,8 @@ flask_socketio
 python-dotenv
 google-generativeai
 langchain
+langchain-core
 langchain-community
-langchain-google-genai
 faiss-cpu
 numpy
 werkzeug
