@@ -370,43 +370,6 @@ const MeetingDetails = ({ meetingId, activeTab, onBack, onTabChange }) => {
               </div>
             </div>
 
-            {/* Individual Export Dropdown */}
-            <div className="relative group">
-              <button className="flex items-center space-x-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">
-                <FileDown className="w-4 h-4" />
-                <span>Export</span>
-              </button>
-              
-              <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
-                <div className="p-2">
-                  <button
-                    onClick={() => downloadReport('pdf')}
-                    className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300"
-                  >
-                    Download PDF
-                  </button>
-                  <button
-                    onClick={() => downloadReport('json')}
-                    className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300"
-                  >
-                    Export JSON
-                  </button>
-                  <button
-                    onClick={() => downloadReport('csv')}
-                    className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300"
-                  >
-                    Export CSV
-                  </button>
-                  <button
-                    onClick={() => downloadReport('txt')}
-                    className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300"
-                  >
-                    Export TXT
-                  </button>
-                </div>
-              </div>
-            </div>
-
             <button
               onClick={handleShare}
               className="flex items-center space-x-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
