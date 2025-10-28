@@ -15,7 +15,8 @@ import {
   MessageSquare,
   Brain,
   RefreshCw,
-  ClipboardList  
+  ClipboardList,
+  FileDown  // Add this import
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import TranscriptViewer from '../components/TranscriptViewer';
@@ -227,7 +228,26 @@ const MeetingDetails = ({ meetingId, activeTab, onBack, onTabChange }) => {
     }
   };
 
+  // Add new function for comprehensive export
+  const downloadComprehensiveReport = async (format) => {
+    try {
+      await downloadFile(`/report/${meetingId}/comprehensive/${format}`, `meeting_${meetingId}_complete.${format}`);
+    } catch (error) {
+      console.error('Error downloading comprehensive report:', error);
+    }
+  };
+
+  // Add new function for tab-specific export
+  const downloadTabContent = async (tab, format) => {
+    try {
+      await downloadFile(`/report/${meetingId}/${tab}/${format}`, `meeting_${meetingId}_${tab}.${format}`);
+    } catch (error) {
+      console.error(`Error downloading ${tab}:`, error);
+    }
+  };
+
   const getFolderName = (folderId) => {
+    if (!folderId || folderId === 'recent') return 'Recent';
     const folder = folders.find(f => f.id === folderId);
     return folder ? folder.name : 'Unknown';
   };
@@ -316,10 +336,44 @@ const MeetingDetails = ({ meetingId, activeTab, onBack, onTabChange }) => {
           </button>
 
           <div className="flex items-center space-x-3">
-            {/* Download Dropdown */}
+            {/* Export All - New comprehensive dropdown */}
+            <div className="relative group">
+              <button className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-lg transition-colors shadow-md">
+                <Download className="w-4 h-4" />
+                <span>Export Complete Report</span>
+              </button>
+              
+              <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                <div className="p-2">
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">
+                    Complete Meeting Report
+                  </div>
+                  <button
+                    onClick={() => downloadComprehensiveReport('pdf')}
+                    className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300"
+                  >
+                    📄 Export as PDF
+                  </button>
+                  <button
+                    onClick={() => downloadComprehensiveReport('json')}
+                    className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300"
+                  >
+                    📋 Export as JSON
+                  </button>
+                  <button
+                    onClick={() => downloadComprehensiveReport('txt')}
+                    className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300"
+                  >
+                    📝 Export as TXT
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Individual Export Dropdown */}
             <div className="relative group">
               <button className="flex items-center space-x-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors">
-                <Download className="w-4 h-4" />
+                <FileDown className="w-4 h-4" />
                 <span>Export</span>
               </button>
               
@@ -567,7 +621,7 @@ const MeetingDetails = ({ meetingId, activeTab, onBack, onTabChange }) => {
 };
 
 const SummaryView = ({ summary, meetingId }) => {
-  const { makeAuthenticatedRequest } = useAuth();
+  const { makeAuthenticatedRequest, downloadFile } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedSummary, setGeneratedSummary] = useState(summary);
   const [error, setError] = useState('');
@@ -664,14 +718,44 @@ const SummaryView = ({ summary, meetingId }) => {
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Meeting Summary</h3>
-            <button
-              onClick={generateSummary}
-              disabled={isGenerating}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 rounded-lg transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
-              <span>Regenerate</span>
-            </button>
+            <div className="flex items-center space-x-2">
+              <div className="relative group">
+                <button className="flex items-center space-x-2 px-4 py-2 bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800 text-green-700 dark:text-green-300 rounded-lg transition-colors">
+                  <FileDown className="w-4 h-4" />
+                  <span>Export Summary</span>
+                </button>
+                <div className="absolute right-0 top-full mt-2 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                  <div className="p-2">
+                    <button
+                      onClick={() => downloadFile(`/report/${meetingId}/summary/pdf`, `summary_${meetingId}.pdf`)}
+                      className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300"
+                    >
+                      PDF
+                    </button>
+                    <button
+                      onClick={() => downloadFile(`/report/${meetingId}/summary/json`, `summary_${meetingId}.json`)}
+                      className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300"
+                    >
+                      JSON
+                    </button>
+                    <button
+                      onClick={() => downloadFile(`/report/${meetingId}/summary/txt`, `summary_${meetingId}.txt`)}
+                      className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300"
+                    >
+                      TXT
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={generateSummary}
+                disabled={isGenerating}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 rounded-lg transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
+                <span>Regenerate</span>
+              </button>
+            </div>
           </div>
 
           {/* Metrics */}
@@ -863,7 +947,7 @@ const SummaryView = ({ summary, meetingId }) => {
 };
 
 const MinutesView = ({ minutes, meetingId }) => {
-  const { makeAuthenticatedRequest } = useAuth();
+  const { makeAuthenticatedRequest, downloadFile } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedMinutes, setGeneratedMinutes] = useState(minutes);
   const [error, setError] = useState('');
@@ -958,14 +1042,44 @@ const MinutesView = ({ minutes, meetingId }) => {
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-3xl font-bold">Minutes of Meeting</h3>
-            <button
-              onClick={generateMinutes}
-              disabled={isGenerating}
-              className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
-              <span>Regenerate</span>
-            </button>
+            <div className="flex items-center space-x-2">
+              <div className="relative group">
+                <button className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors">
+                  <FileDown className="w-4 h-4" />
+                  <span>Export Minutes</span>
+                </button>
+                <div className="absolute right-0 top-full mt-2 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                  <div className="p-2">
+                    <button
+                      onClick={() => downloadFile(`/report/${meetingId}/minutes/pdf`, `minutes_${meetingId}.pdf`)}
+                      className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300"
+                    >
+                      PDF
+                    </button>
+                    <button
+                      onClick={() => downloadFile(`/report/${meetingId}/minutes/json`, `minutes_${meetingId}.json`)}
+                      className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300"
+                    >
+                      JSON
+                    </button>
+                    <button
+                      onClick={() => downloadFile(`/report/${meetingId}/minutes/txt`, `minutes_${meetingId}.txt`)}
+                      className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300"
+                    >
+                      TXT
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={generateMinutes}
+                disabled={isGenerating}
+                className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
+                <span>Regenerate</span>
+              </button>
+            </div>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             {meetingInfo.date && (
@@ -1209,7 +1323,7 @@ const MinutesView = ({ minutes, meetingId }) => {
 };
 
 const InsightsView = ({ insights, meetingId }) => {
-  const { makeAuthenticatedRequest } = useAuth();
+  const { makeAuthenticatedRequest, downloadFile } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedInsights, setGeneratedInsights] = useState(insights);
   const [error, setError] = useState('');
@@ -1326,37 +1440,84 @@ const InsightsView = ({ insights, meetingId }) => {
         <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl p-6 text-white shadow-lg">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-2xl font-bold">Meeting Insights</h3>
-            <button
-              onClick={generateInsights}
-              disabled={isGenerating}
-              className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
-              <span>Regenerate</span>
-            </button>
+            <div className="flex items-center space-x-2">
+              <div className="relative group">
+                <button className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors">
+                  <FileDown className="w-4 h-4" />
+                  <span>Export Insights</span>
+                </button>
+                <div className="absolute right-0 top-full mt-2 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                  <div className="p-2">
+                    <button
+                      onClick={() => downloadFile(`/report/${meetingId}/insights/pdf`, `insights_${meetingId}.pdf`)}
+                      className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300"
+                    >
+                      PDF
+                    </button>
+                    <button
+                      onClick={() => downloadFile(`/report/${meetingId}/insights/json`, `insights_${meetingId}.json`)}
+                      className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300"
+                    >
+                      JSON
+                    </button>
+                    <button
+                      onClick={() => downloadFile(`/report/${meetingId}/insights/txt`, `insights_${meetingId}.txt`)}
+                      className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300"
+                    >
+                      TXT
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={generateInsights}
+                disabled={isGenerating}
+                className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
+                <span>Regenerate</span>
+              </button>
+            </div>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
-              <div className="text-3xl font-bold mb-1">{overview.meeting_effectiveness_score || 'N/A'}/10</div>
-              <div className="text-sm opacity-90">Effectiveness Score</div>
+          {/* Metrics */}
+          {generatedInsights.metrics && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 text-center">
+                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                  {generatedInsights.metrics.total_topics || 0}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Topics Discussed</div>
+              </div>
+              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 text-center">
+                <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+                  {generatedInsights.metrics.decisions_made || 0}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Decisions Made</div>
+              </div>
+              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 text-center">
+                <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
+                  {generatedInsights.metrics.action_items || 0}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Action Items</div>
+              </div>
+              <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 text-center">
+                <div className="text-3xl font-bold text-red-600 dark:text-red-400">
+                  {generatedInsights.metrics.risks || 0}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Risks Identified</div>
+              </div>
             </div>
-            <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
-              <div className="text-3xl font-bold mb-1 capitalize">{overview.overall_sentiment || 'N/A'}</div>
-              <div className="text-sm opacity-90">Overall Sentiment</div>
+          )}
+
+          {/* Executive Summary */}
+          {generatedInsights.executive_summary && (
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-6 border-l-4 border-blue-500">
+              <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Executive Summary</h4>
+              <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                {generatedInsights.executive_summary}
+              </p>
             </div>
-            <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
-              <div className="text-3xl font-bold mb-1 capitalize">{overview.engagement_level || 'N/A'}</div>
-              <div className="text-sm opacity-90">Engagement Level</div>
-            </div>
-            <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
-              <div className="text-3xl font-bold mb-1">{generatedInsights.key_themes?.length || 0}</div>
-              <div className="text-sm opacity-90">Key Themes</div>
-            </div>
-          </div>
-          
-          {overview.summary && (
-            <p className="mt-4 text-white/90 leading-relaxed">{overview.summary}</p>
           )}
         </div>
 
@@ -1388,7 +1549,7 @@ const InsightsView = ({ insights, meetingId }) => {
                   <p className="text-sm text-gray-700 dark:text-gray-300">{theme.description}</p>
                 </div>
               ))}
-            </div>
+                       </div>
           </div>
         )}
 
