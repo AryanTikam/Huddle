@@ -28,7 +28,8 @@ if IS_PRODUCTION:
         'https://huddle-gathersmarter.netlify.app',
         'https://huddle-gathersmarter.netlify.app/',
         'https://huddle-bugz.onrender.com',
-        'https://huddle-bugz.onrender.com/'
+        'https://huddle-bugz.onrender.com/',
+        'chrome-extension://*'
     ]
 else:
     allowed_origins = ['http://localhost:3000']

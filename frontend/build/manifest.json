@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Huddle - AI Meeting Intelligence",
+  "version": "1.0.0",
+  "description": "AI-powered meeting recording, transcription, and insights.",
+  "icons": {
+    "16": "logo.png",
+    "48": "logo.png",
+    "128": "logo.png"
+  },
+  "permissions": [
+    "microphone",
+    "storage",
+    "sidePanel"
+  ],
+  "action": {
+    "default_title": "Open Huddle"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "index.html"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  }
+}
