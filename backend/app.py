@@ -46,11 +46,23 @@ def handle_options():
     if request.method == 'OPTIONS':
         response = app.make_response('')
         response.status_code = 200
-        response.headers.add('Access-Control-Allow-Origin', request.headers.get('Origin', '*'))
+        origin = request.headers.get('Origin', '')
+        if origin in allowed_origins:
+            response.headers.add('Access-Control-Allow-Origin', origin)
         response.headers.add('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
         response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         response.headers.add('Access-Control-Allow-Credentials', 'true')
         return response
+
+@app.after_request
+def add_cors_headers(response):
+    origin = request.headers.get('Origin', '')
+    if origin in allowed_origins:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    return response
 
 # Initialize Socket.IO with proper CORS for production
 socketio = SocketIO(app, 
