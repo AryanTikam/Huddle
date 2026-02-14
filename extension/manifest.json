@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "Huddle - AI Meeting Platform",
+  "description": "AI-Powered Meeting Intelligence Platform. Record, transcribe, and analyze your meetings with AI.",
+  "version": "1.0.0",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": [
+    "sidePanel",
+    "storage",
+    "activeTab",
+    "tabs",
+    "notifications"
+  ],
+  "host_permissions": [
+    "http://localhost:5000/*",
+    "https://huddle-bugz.onrender.com/*",
+    "https://huddle-gathersmarter.netlify.app/*"
+  ],
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Open Huddle Side Panel",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' http://localhost:5000 https://huddle-bugz.onrender.com wss://huddle-bugz.onrender.com ws://huddle-bugz.onrender.com ws://localhost:5000 wss://localhost:5000 https://*.onrender.com wss://*.onrender.com;"
+  }
+}

@@ -15,6 +15,9 @@ import LoadingSpinner from './components/LoadingSpinner';
 import LandingPage from './pages/LandingPage';
 
 const AppContent = () => {
+  // Detect Chrome extension environment
+  const isExtension = !!(typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id);
+
   // Load initial states from localStorage
   const [activeView, setActiveView] = useState(() => {
     return localStorage.getItem('activeView') || 'dashboard';
@@ -28,7 +31,8 @@ const AppContent = () => {
   const [roomId, setRoomId] = useState(null);
   const [meetingData, setMeetingData] = useState(null);
   const [isHost, setIsHost] = useState(false);
-  const [showLanding, setShowLanding] = useState(true); 
+  const [showLanding, setShowLanding] = useState(!isExtension); // Skip landing in extension
+  const [sidebarOpen, setSidebarOpen] = useState(false); // For extension sidebar toggle
   const { user, loading, isAuthenticated } = useAuth();
 
   useEffect(() => {
@@ -173,15 +177,22 @@ const AppContent = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
-      <Header />
+    <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors ${isExtension ? 'extension-mode' : ''}`}>
+      <Header onToggleSidebar={isExtension ? () => setSidebarOpen(!sidebarOpen) : undefined} isExtension={isExtension} />
       <div className="flex h-screen">
         {!['webrtc-meeting', 'join-meeting'].includes(activeView) && (
-          <Sidebar 
-            activeView={activeView} 
-            setActiveView={setActiveView}
-            onMeetingClick={handleMeetingClick}
-          />
+          <>
+            <div className={isExtension ? `sidebar-container ${sidebarOpen ? 'sidebar-open' : ''}` : ''}>
+              <Sidebar 
+                activeView={activeView} 
+                setActiveView={(view) => { setActiveView(view); if (isExtension) setSidebarOpen(false); }}
+                onMeetingClick={(id, tab) => { handleMeetingClick(id, tab); if (isExtension) setSidebarOpen(false); }}
+              />
+            </div>
+            {isExtension && sidebarOpen && (
+              <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
+            )}
+          </>
         )}
         <main className={`flex-1 overflow-y-auto ${
           ['webrtc-meeting', 'join-meeting'].includes(activeView) ? '' : 'pt-20'

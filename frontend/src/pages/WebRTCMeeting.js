@@ -312,15 +312,23 @@ const WebRTCMeeting = ({ roomId, onLeave, isHost = false, meetingData = null }) 
   const initializeSocket = useCallback((stream) => {
     console.log('[SOCKET] Initializing socket connection...');
     
-    const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || API_BASE.replace('/api', '');
+    // Handle Chrome extension environment where process.env may not be available
+    const isExtension = !!(typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id);
+    const SOCKET_URL = isExtension 
+      ? 'https://huddle-bugz.onrender.com'
+      : (process.env.REACT_APP_SOCKET_URL || API_BASE.replace('/api', ''));
     console.log('[SOCKET] Connecting to:', SOCKET_URL);
     
     const socket = io(SOCKET_URL, {
-      transports: ['websocket', 'polling'],
+      transports: isExtension ? ['polling', 'websocket'] : ['websocket', 'polling'],
       upgrade: true,
-      rememberUpgrade: true,
-      timeout: 10000,
-      forceNew: true
+      rememberUpgrade: !isExtension,
+      timeout: 20000,
+      forceNew: true,
+      withCredentials: false,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000
     });
     
     socketRef.current = socket;

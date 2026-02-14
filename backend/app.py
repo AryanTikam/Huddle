@@ -33,10 +33,29 @@ if IS_PRODUCTION:
 else:
     allowed_origins = ['http://localhost:3000']
 
+# Add Chrome extension origins from environment variable
+chrome_extension_ids = os.getenv('CHROME_EXTENSION_IDS', '').strip()
+if chrome_extension_ids:
+    for ext_id in chrome_extension_ids.split(','):
+        ext_id = ext_id.strip()
+        if ext_id:
+            allowed_origins.append(f'chrome-extension://{ext_id}')
+
+def is_allowed_origin(origin):
+    """Check if origin is allowed, supporting chrome-extension:// dynamically."""
+    if not origin:
+        return False
+    if origin in allowed_origins:
+        return True
+    # Allow any chrome-extension:// origin (sandboxed by Chrome)
+    if origin.startswith('chrome-extension://'):
+        return True
+    return False
+
 print(f"[DEBUG] Allowed origins: {allowed_origins}")
 
 CORS(app, 
-     origins=allowed_origins, 
+     origins=allowed_origins + [r'chrome-extension://.*'], 
      supports_credentials=True,
      allow_headers=['Content-Type', 'Authorization'],
      methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
@@ -47,7 +66,7 @@ def handle_options():
         response = app.make_response('')
         response.status_code = 200
         origin = request.headers.get('Origin', '')
-        if origin in allowed_origins:
+        if is_allowed_origin(origin):
             response.headers.add('Access-Control-Allow-Origin', origin)
         response.headers.add('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
         response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
@@ -57,7 +76,7 @@ def handle_options():
 @app.after_request
 def add_cors_headers(response):
     origin = request.headers.get('Origin', '')
-    if origin in allowed_origins:
+    if is_allowed_origin(origin):
         response.headers['Access-Control-Allow-Origin'] = origin
         response.headers['Access-Control-Allow-Credentials'] = 'true'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
@@ -65,12 +84,16 @@ def add_cors_headers(response):
     return response
 
 # Initialize Socket.IO with proper CORS for production
+# Use '*' to allow all origins (chrome-extension:// origins can't be pattern-matched)
+# The HTTP CORS middleware already validates origins for regular requests
 socketio = SocketIO(app, 
-                   cors_allowed_origins=allowed_origins,
+                   cors_allowed_origins='*',
                    logger=False,
                    engineio_logger=False,
-                   transports=['websocket', 'polling'],
-                   async_mode='threading')
+                   transports=['polling', 'websocket'],
+                   async_mode='threading',
+                   ping_timeout=60,
+                   ping_interval=25)
 
 # MongoDB connection debugging
 mongo_uri = os.getenv("MONGODB_URI") if IS_PRODUCTION else "mongodb://localhost:27017/huddle"

@@ -6,6 +6,8 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "CI=false react-scripts build",
+    "build:extension": "INLINE_RUNTIME_CHUNK=false GENERATE_SOURCEMAP=false PUBLIC_URL=. CI=false react-scripts build && node ../extension/build-extension.js",
+    "build:extension:win": "set INLINE_RUNTIME_CHUNK=false&& set GENERATE_SOURCEMAP=false&& set PUBLIC_URL=.&& set CI=false&& react-scripts build && node ../extension/build-extension.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

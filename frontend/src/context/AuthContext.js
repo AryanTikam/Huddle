@@ -15,10 +15,25 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
 
+  // Detect Chrome extension environment
+  const isExtension = !!(typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id);
+
   // Use environment variable or fallback to production URL
-  const API_BASE = process.env.NODE_ENV === 'development' 
-    ? 'http://localhost:5000/api' 
-    : (process.env.REACT_APP_API_URL || 'https://huddle-bugz.onrender.com/api');
+  // In Chrome extension context, process.env may not be available so we use fallbacks
+  const API_BASE = (() => {
+    try {
+      if (isExtension) {
+        // In extension mode, always use the production API
+        return 'https://huddle-bugz.onrender.com/api';
+      }
+      if (process.env.NODE_ENV === 'development') {
+        return 'http://localhost:5000/api';
+      }
+      return process.env.REACT_APP_API_URL || 'https://huddle-bugz.onrender.com/api';
+    } catch {
+      return 'https://huddle-bugz.onrender.com/api';
+    }
+  })();
 
   useEffect(() => {
     if (token) {

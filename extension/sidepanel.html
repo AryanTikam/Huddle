@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#3B82F6" />
+    <meta name="description" content="AI-Powered Meeting Intelligence Platform" />
+    <title>Huddle - AI Meeting Platform</title>
+    <style>
+      /* Loading state before React mounts */
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        width: 100%;
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+      #root {
+        width: 100%;
+        min-height: 100vh;
+      }
+      .extension-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
+      }
+      .extension-loading .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid #e5e7eb;
+        border-top-color: #3b82f6;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      .extension-loading p {
+        margin-top: 16px;
+        color: #6b7280;
+        font-size: 14px;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div class="extension-loading">
+        <div class="spinner"></div>
+        <p>Loading Huddle...</p>
+      </div>
+    </div>
+    <!-- React build files will be injected here by the build script -->
+  </body>
+</html>
