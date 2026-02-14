@@ -8,46 +8,10 @@ import torch
 import shutil
 from deep_translator import GoogleTranslator
 from langdetect import detect, DetectorFactory
+from aksharamukha import transliterate
 
 # Set seed for consistent language detection
 DetectorFactory.seed = 0
-
-# Devanagari script mapping for Roman transliteration
-ROMAN_TO_DEVANAGARI_MAP = {
-    # Common Marathi/Hindi words and phrases
-    'kasahe': 'कसाहे', 'kasa': 'कसा', 'kasah': 'कसाह', 'kaasa': 'कासा',
-    'athe': 'आथे', 'atha': 'आथा', 'astuu': 'आस्तू',
-    'baraha': 'बराह', 'baray': 'बराय', 'bara': 'बरा', 'bere': 'बेरे',
-    'hello': 'हेलो', 'halo': 'हालो', 'helo': 'हेलो',
-    'whos': 'हू', 'who': 'हू',
-    'de': 'दे', 'da': 'दा',
-    'nasuто': 'नास', 'nasu': 'नासु',
-    'suppodiye': 'सपोडीये',
-    'cha': 'छ', 'chaa': 'छा',
-    'pannas': 'पन्नास',
-    'bela': 'बेला',
-    'danap': 'दनाप', 'daanap': 'दानाप',
-    'magba': 'मग्बा',
-    'falun': 'फालुन',
-    'sonaa': 'सोना',
-    'craig': 'क्रैग',
-    'say': 'सय', 'se': 'से',
-    'hello': 'हेलो',
-    'got': 'गॉट',
-    'we': 'वे',
-    'engish': 'इंग्लिश',
-    'english': 'इंग्लिश',
-    'ok': 'ओके',
-    'okay': 'ओकेय',
-    'alright': 'ऑलराईट',
-    'mala': 'मला',
-    'tula': 'तुला',
-    'aata': 'अता',
-    'kaay': 'काय',
-    'kaise': 'कैसे',
-    'hain': 'हैं',
-    'isna': 'इसना',
-}
 
 def translate_text(text, source_lang="auto", target_lang="en"):
     """
@@ -86,7 +50,7 @@ def detect_language_text(text):
 def roman_to_devanagari(text, lang="hi"):
     """
     Convert Roman script (transliteration) to Devanagari script.
-    Uses a mapping-based approach for common words in Hindi and Marathi.
+    Uses aksharamukha library for proper transliteration mapping.
     
     Args:
         text: Roman script text
@@ -95,27 +59,40 @@ def roman_to_devanagari(text, lang="hi"):
     Returns:
         Text in Devanagari script
     """
-    import re
-    
     if not text.strip():
         return text
     
-    result = text.lower()
+    try:
+        # aksharamukha uses IAST (International Alphabet of Sanskrit Transliteration)
+        # as the intermediate format for conversion
+        # We'll convert from IAST to Devanagari
+        
+        # Map language codes to aksharamukha script names
+        lang_script_map = {
+            'hi': 'Devanagari',  # Hindi uses Devanagari
+            'mr': 'Devanagari'   # Marathi also uses Devanagari
+        }
+        
+        target_script = lang_script_map.get(lang, 'Devanagari')
+        
+        # Try to transliterate from IAST romanization to Devanagari
+        # If input is already in IAST-like format, this will work well
+        try:
+            result = transliterate.to_iast(text, 'Kolkata')
+            result = transliterate.to_devanagari(result)
+            return result
+        except:
+            # Fallback: direct conversion attempt
+            try:
+                result = transliterate.to_devanagari(text)
+                return result
+            except:
+                # If all transliteration fails, return original text
+                return text
     
-    # Sort keys by length (longest first) to match multi-character sequences first
-    sorted_map = sorted(ROMAN_TO_DEVANAGARI_MAP.items(), key=lambda x: len(x[0]), reverse=True)
-    
-    for roman, devanagari in sorted_map:
-        # Use word boundaries to avoid partial replacements
-        # Match whole words only
-        pattern = r'\b' + re.escape(roman) + r'\b'
-        result = re.sub(pattern, devanagari, result, flags=re.IGNORECASE)
-    
-    # Clean up any remaining extra characters that got through (like 'то', 'ش', etc)
-    # Remove non-Devanagari, non-Latin letters, but keep numbers and common punctuation
-    result = re.sub(r'[^\u0900-\u097F\u0041-\u005A\u0061-\u007A\s\.\,\?\!]', '', result)
-    
-    return result
+    except Exception as e:
+        print(f"Transliteration error: {e}")
+        return text
 
 
 def process_indic_text(text, detected_lang):

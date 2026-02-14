@@ -5,3 +5,4 @@ scipy
 deep-translator
 langdetect
 indic-nlp-library
+aksharamukha
