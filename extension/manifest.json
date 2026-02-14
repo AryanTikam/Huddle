@@ -14,7 +14,10 @@
     "storage",
     "activeTab",
     "tabs",
-    "notifications"
+    "notifications",
+    "tabCapture",
+    "desktopCapture",
+    "offscreen"
   ],
   "host_permissions": [
     "http://localhost:5000/*",
@@ -37,6 +40,6 @@
     }
   },
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' http://localhost:5000 https://huddle-bugz.onrender.com wss://huddle-bugz.onrender.com ws://huddle-bugz.onrender.com ws://localhost:5000 wss://localhost:5000 https://*.onrender.com wss://*.onrender.com;"
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' http://localhost:5000 https://huddle-bugz.onrender.com wss://huddle-bugz.onrender.com ws://huddle-bugz.onrender.com ws://localhost:5000 wss://localhost:5000 https://*.onrender.com wss://*.onrender.com https://*.google.com wss://*.google.com https://*.googleapis.com;"
   }
 }

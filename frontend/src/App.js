@@ -13,6 +13,7 @@ import WebRTCMeeting from './pages/WebRTCMeeting';
 import Auth from './components/Auth';
 import LoadingSpinner from './components/LoadingSpinner';
 import LandingPage from './pages/LandingPage';
+import CaptureAudio from './pages/CaptureAudio';
 
 const AppContent = () => {
   // Detect Chrome extension environment
@@ -136,6 +137,13 @@ const AppContent = () => {
         return (
           <NewWebRTCMeeting 
             onMeetingCreated={handleWebRTCMeetingCreated}
+            onNavigate={setActiveView}
+          />
+        );
+      case 'capture-audio':
+        return (
+          <CaptureAudio 
+            onMeetingCreated={handleMeetingCreated}
             onNavigate={setActiveView}
           />
         );

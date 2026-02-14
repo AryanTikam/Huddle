@@ -12,7 +12,8 @@ import {
   Trash2, 
   Move,
   Folder,
-  Clock
+  Clock,
+  Monitor
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -50,6 +51,7 @@ const Sidebar = ({ activeView, setActiveView, onMeetingClick }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
     { id: 'new-meeting', label: 'Record Meeting', icon: Mic },
+    { id: 'capture-audio', label: 'Capture Audio', icon: Monitor },
     { id: 'new-webrtc-meeting', label: 'Video Meeting', icon: Video },
     { id: 'meetings', label: 'All Meetings', icon: FileText },
   ];

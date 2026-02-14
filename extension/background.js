@@ -24,7 +24,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       sendResponse({ tab: tabs[0] || null });
     });
-    return true; // Keep the message channel open for async response
+    return true;
   }
 
   if (message.type === 'CREATE_NOTIFICATION') {
@@ -36,6 +36,45 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       priority: 2
     });
     sendResponse({ success: true });
+    return true;
+  }
+
+  // Handle tab audio capture request from side panel
+  if (message.type === 'START_TAB_CAPTURE') {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (!tabs[0]) {
+        sendResponse({ error: 'No active tab found' });
+        return;
+      }
+      const tabId = tabs[0].id;
+      chrome.tabCapture.capture(
+        { audio: true, video: false },
+        (stream) => {
+          if (chrome.runtime.lastError) {
+            sendResponse({ error: chrome.runtime.lastError.message });
+            return;
+          }
+          // We can't send MediaStream via message, so we use a different approach
+          // The stream will be handled via offscreen document or direct tab capture
+          sendResponse({ success: true, tabId: tabId });
+        }
+      );
+    });
+    return true;
+  }
+
+  // Handle desktop media capture request  
+  if (message.type === 'REQUEST_DESKTOP_MEDIA') {
+    chrome.desktopCapture.chooseDesktopMedia(
+      ['screen', 'window', 'tab', 'audio'],
+      (streamId, options) => {
+        if (!streamId) {
+          sendResponse({ error: 'User cancelled or no source selected' });
+          return;
+        }
+        sendResponse({ streamId: streamId, options: options });
+      }
+    );
     return true;
   }
 });

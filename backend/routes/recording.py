@@ -3,6 +3,8 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime
 import uuid
 import base64
+import os
+from utils.stt_service import stt_service
 
 recording_bp = Blueprint('recording', __name__)
 
@@ -21,7 +23,7 @@ def start_recording():
         'status': 'recording',
         'created_at': datetime.utcnow(),
         'participants': [],
-        'transcript': '',
+        'transcript': [],
         'speakers': {}
     }
     
@@ -89,3 +91,54 @@ def stop_recording(meeting_id):
         'status': 'stopped',
         'ended_at': current_time.isoformat()
     })
+
+
+@recording_bp.route('/transcribe-audio', methods=['POST'])
+@jwt_required()
+def transcribe_audio():
+    """Accept base64-encoded audio data and transcribe using Whisper."""
+    user_id = get_jwt_identity()
+    data = request.json
+    audio_b64 = data.get('audio_data')
+    language = data.get('language', 'en-US')
+    meeting_id = data.get('meeting_id')
+    speaker = data.get('speaker', 'Speaker')
+
+    if not audio_b64:
+        return jsonify({'error': 'No audio data provided'}), 400
+
+    if not stt_service.is_available:
+        return jsonify({'error': 'Whisper is not installed on the server'}), 503
+
+    try:
+        audio_bytes = base64.b64decode(audio_b64)
+
+        # Skip very small audio (likely silence or too short to transcribe)
+        if len(audio_bytes) < 1000:
+            return jsonify({'text': '', 'status': 'success'})
+
+        lang_code = language.split('-')[0] if language else 'en'
+        text = stt_service.transcribe(audio_bytes, language=lang_code)
+
+        if text:
+            print(f'[STT] Whisper transcribed: "{text[:80]}..."' if len(text) > 80 else f'[STT] Whisper transcribed: "{text}"')
+        else:
+            return jsonify({'text': '', 'status': 'success'})
+
+        # Save transcript entry to the meeting
+        if meeting_id:
+            current_app.mongo.db.meetings.update_one(
+                {'id': meeting_id},
+                {'$push': {'transcript': {
+                    'text': text,
+                    'speaker': speaker,
+                    'timestamp': datetime.utcnow(),
+                    'confidence': 0.9
+                }}}
+            )
+
+        return jsonify({'text': text, 'status': 'success', 'method': 'whisper'})
+
+    except Exception as e:
+        print(f'[STT] Transcription error: {str(e)}')
+        return jsonify({'error': str(e), 'status': 'error'}), 500

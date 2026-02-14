@@ -2,3 +2,4 @@ openai-whisper
 sounddevice
 numpy<2.4
 scipy
+imageio-ffmpeg
