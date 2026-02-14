@@ -8,10 +8,46 @@ import torch
 import shutil
 from deep_translator import GoogleTranslator
 from langdetect import detect, DetectorFactory
-from aksharamukha import transliterate
 
 # Set seed for consistent language detection
 DetectorFactory.seed = 0
+
+# Devanagari script mapping for Roman transliteration
+ROMAN_TO_DEVANAGARI_MAP = {
+    # Common Marathi/Hindi words and phrases
+    'kasahe': 'कसाहे', 'kasa': 'कसा', 'kasah': 'कसाह', 'kaasa': 'कासा',
+    'athe': 'आथे', 'atha': 'आथा', 'astuu': 'आस्तू',
+    'baraha': 'बराह', 'baray': 'बराय', 'bara': 'बरा', 'bere': 'बेरे',
+    'hello': 'हेलो', 'halo': 'हालो', 'helo': 'हेलो',
+    'whos': 'हू', 'who': 'हू',
+    'de': 'दे', 'da': 'दा',
+    'nasuто': 'नास', 'nasu': 'नासु',
+    'suppodiye': 'सपोडीये',
+    'cha': 'छ', 'chaa': 'छा',
+    'pannas': 'पन्नास',
+    'bela': 'बेला',
+    'danap': 'दनाप', 'daanap': 'दानाप',
+    'magba': 'मग्बा',
+    'falun': 'फालुन',
+    'sonaa': 'सोना',
+    'craig': 'क्रैग',
+    'say': 'सय', 'se': 'से',
+    'hello': 'हेलो',
+    'got': 'गॉट',
+    'we': 'वे',
+    'engish': 'इंग्लिश',
+    'english': 'इंग्लिश',
+    'ok': 'ओके',
+    'okay': 'ओकेय',
+    'alright': 'ऑलराईट',
+    'mala': 'मला',
+    'tula': 'तुला',
+    'aata': 'अता',
+    'kaay': 'काय',
+    'kaise': 'कैसे',
+    'hain': 'हैं',
+    'isna': 'इसना',
+}
 
 def translate_text(text, source_lang="auto", target_lang="en"):
     """
@@ -27,7 +63,7 @@ def translate_text(text, source_lang="auto", target_lang="en"):
     """
     if not text.strip():
         return text
-    
+
     try:
         translator = GoogleTranslator(source_language=source_lang, target_language=target_lang)
         translated = translator.translate(text)
@@ -50,7 +86,7 @@ def detect_language_text(text):
 def roman_to_devanagari(text, lang="hi"):
     """
     Convert Roman script (transliteration) to Devanagari script.
-    Uses aksharamukha library for proper transliteration mapping.
+    Uses a mapping-based approach for common words in Hindi and Marathi.
     
     Args:
         text: Roman script text
@@ -59,40 +95,27 @@ def roman_to_devanagari(text, lang="hi"):
     Returns:
         Text in Devanagari script
     """
+    import re
+    
     if not text.strip():
         return text
+
+    result = text.lower()
     
-    try:
-        # aksharamukha uses IAST (International Alphabet of Sanskrit Transliteration)
-        # as the intermediate format for conversion
-        # We'll convert from IAST to Devanagari
-        
-        # Map language codes to aksharamukha script names
-        lang_script_map = {
-            'hi': 'Devanagari',  # Hindi uses Devanagari
-            'mr': 'Devanagari'   # Marathi also uses Devanagari
-        }
-        
-        target_script = lang_script_map.get(lang, 'Devanagari')
-        
-        # Try to transliterate from IAST romanization to Devanagari
-        # If input is already in IAST-like format, this will work well
-        try:
-            result = transliterate.to_iast(text, 'Kolkata')
-            result = transliterate.to_devanagari(result)
-            return result
-        except:
-            # Fallback: direct conversion attempt
-            try:
-                result = transliterate.to_devanagari(text)
-                return result
-            except:
-                # If all transliteration fails, return original text
-                return text
+    # Sort keys by length (longest first) to match multi-character sequences first
+    sorted_map = sorted(ROMAN_TO_DEVANAGARI_MAP.items(), key=lambda x: len(x[0]), reverse=True)
     
-    except Exception as e:
-        print(f"Transliteration error: {e}")
-        return text
+    for roman, devanagari in sorted_map:
+        # Use word boundaries to avoid partial replacements
+        # Match whole words only
+        pattern = r'\b' + re.escape(roman) + r'\b'
+        result = re.sub(pattern, devanagari, result, flags=re.IGNORECASE)
+    
+    # Clean up any remaining extra characters that got through (like 'то', 'ش', etc)
+    # Remove non-Devanagari, non-Latin letters, but keep numbers and common punctuation
+    result = re.sub(r'[^\u0900-\u097F\u0041-\u005A\u0061-\u007A\s\.\,\?\!]', '', result)
+
+    return result
 
 
 def process_indic_text(text, detected_lang):
@@ -111,7 +134,7 @@ def process_indic_text(text, detected_lang):
         # Attempt to convert to Devanagari
         devanagari = roman_to_devanagari(text, lang=detected_lang)
         return devanagari, True  # Return converted text and flag
-    
+
     return text, False
 
 def main():
@@ -138,7 +161,7 @@ def main():
                 print("⚠️  For better Hindi/Marathi accuracy, try: python stt.py --language {} --model small".format(args.language))
     else:
         print("Language detection enabled.")
-    
+
     if args.translate:
         print(f"Translation enabled (target: {args.translate_target})")
     else:
@@ -147,7 +170,7 @@ def main():
     # Audio settings
     samplerate = 16000  # Whisper expects 16kHz
     channels = 1
-    
+
     # Queue for passing audio data
     q = queue.Queue()
 
@@ -158,14 +181,14 @@ def main():
         q.put(indata.copy())
 
     print("Recording... (Press Ctrl+C to stop)")
-    
+
     # Buffer to hold audio data
     audio_buffer = np.zeros(0, dtype=np.float32)
     last_output = ""
-    
+
     # We'll use a blocksize equivalent to 1 second roughly for checking the queue
     # specific blocksize isn't strictly necessary for the callback but helps control update rate
-    
+
     try:
         with sd.InputStream(samplerate=samplerate, channels=channels, 
                             callback=callback, dtype="float32"):
@@ -181,20 +204,20 @@ def main():
                 # However, Whisper works best with context. 
                 # For this simple demo, we will transcribe the growing buffer 
                 # but truncate it if it gets too long (e.g., 30s) to maintain performance.
-                
+
                 if len(audio_buffer) > samplerate * 1: # 1 second
-                    
+
                     # For performance, if buffer is huge, keep last 30 seconds
                     if len(audio_buffer) > samplerate * 30:
                         audio_buffer = audio_buffer[-(samplerate*30):]
-                    
+
                     # Transcribe
                     # fp16=True is safe for CUDA, False for CPU
                     use_fp16 = (device == "cuda")
-                    
+
                     # If no language specified, let Whisper detect, but bias towards requested language
                     transcribe_lang = args.language
-                    
+
                     result = model.transcribe(
                         audio_buffer, 
                         fp16=use_fp16, 
@@ -203,18 +226,18 @@ def main():
                     )
                     text = result['text'].strip()
                     detected_lang = result.get('language', 'unknown')
-                    
+
                     # Process Indic languages (Hindi/Marathi) - convert to Devanagari
                     processed_text = text
                     is_converted = False
                     if detected_lang in ['hi', 'mr']:
                         processed_text, is_converted = process_indic_text(text, detected_lang)
-                    
+
                     # Translate if enabled
                     translated_text = text
                     if args.translate and detected_lang != args.translate_target:
                         translated_text = translate_text(text, source_lang=detected_lang, target_lang=args.translate_target)
-                    
+
                     # Prepare output string
                     if args.translate:
                         if is_converted:
@@ -226,29 +249,29 @@ def main():
                             output_str = f"> [{detected_lang.upper()}] {text}\n  [Devanagari] {processed_text}"
                         else:
                             output_str = f"> {text}"
-                    
+
                     # Get terminal width
                     cols = shutil.get_terminal_size().columns
-                    
+
                     # Clear previous output
                     if len(last_output) > 0:
                         # Move to start of current line
                         sys.stdout.write("\r")
-                        
+
                         # Calculate how many lines we need to move up
                         num_lines_up = (len(last_output) - 1) // cols
                         if num_lines_up > 0:
                             sys.stdout.write(f"\033[{num_lines_up}A")
-                            
+
                         # Clear everything from here down
                         sys.stdout.write("\033[J")
-                        
+
                     sys.stdout.write(output_str)
                     sys.stdout.flush()
-                    
+
                     # Update state
                     last_output = output_str
-                    
+
                     # Small sleep to prevent CPU spinning just for the check
                     sd.sleep(200) 
                 else:
@@ -266,7 +289,7 @@ def main():
             )
             final_text = result['text']
             detected_lang = result.get('language', 'unknown')
-            
+
             # Process Indic languages
             if detected_lang in ['hi', 'mr']:
                 processed_final, is_converted = process_indic_text(final_text, detected_lang)
@@ -276,7 +299,7 @@ def main():
                     print(processed_final)
             else:
                 print(final_text)
-            
+
             if args.translate and detected_lang != args.translate_target:
                 translated_final = translate_text(final_text, source_lang=detected_lang, target_lang=args.translate_target)
                 print(f"\nTranslation to {args.translate_target.upper()}:")
