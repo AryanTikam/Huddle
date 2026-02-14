@@ -42,3 +42,15 @@ cd frontend
 npm install
 npm start
 ```
+
+### 3️⃣ Extension Setup 
+```bash
+cd extension
+node build-extension.js
+📝 To load the extension:
+1. Open chrome://extensions/
+2. Enable "Developer mode"
+3. Click "Load unpacked"
+4. Select Huddle/extension/dist folder
+5. Click the Huddle icon → opens as side panel!
+```
