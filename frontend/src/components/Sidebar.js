@@ -13,7 +13,8 @@ import {
   Move,
   Folder,
   Clock,
-  Monitor
+  Monitor,
+  Settings
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -54,6 +55,7 @@ const Sidebar = ({ activeView, setActiveView, onMeetingClick }) => {
     { id: 'capture-audio', label: 'Capture Audio', icon: Monitor },
     { id: 'new-webrtc-meeting', label: 'Video Meeting', icon: Video },
     { id: 'meetings', label: 'All Meetings', icon: FileText },
+    { id: 'settings', label: 'AI Settings', icon: Settings },
   ];
 
   const fetchFolders = async () => {

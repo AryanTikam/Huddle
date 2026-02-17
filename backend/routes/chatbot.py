@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from utils.ai import chatbot_answer, create_vector_store, load_vector_store, generate_simple_chat_response
+from utils.ai_router import chatbot_answer, create_vector_store, load_vector_store, generate_simple_chat_response
 from datetime import datetime
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
@@ -115,26 +115,26 @@ def chat_with_meeting(meeting_id):
                 print(f"[CHATBOT] Large transcript ({len(transcript_text)} chars), using vector store")
                 
                 # Try to load existing vector store
-                vector_store = load_vector_store(meeting_uuid)
+                vector_store = load_vector_store(meeting_uuid, user_id=user_id, db=db)
                 
                 if not vector_store:
                     print("[CHATBOT] No vector store found, creating one...")
                     try:
-                        vector_store = create_vector_store(meeting_uuid, transcript_text)
+                        vector_store = create_vector_store(meeting_uuid, transcript_text, user_id=user_id, db=db)
                         print("[CHATBOT] Vector store created successfully")
                     except Exception as vs_error:
                         print(f"[CHATBOT] Failed to create vector store: {vs_error}")
                         # Fall back to simple response
-                        ai_response = generate_simple_chat_response(user_message, transcript_text[:MAX_SIMPLE_RESPONSE_LENGTH] + "...")
+                        ai_response = generate_simple_chat_response(user_message, transcript_text[:MAX_SIMPLE_RESPONSE_LENGTH] + "...", user_id=user_id, db=db)
                 
                 if vector_store:
                     # Use vector store for accurate responses
-                    ai_response = chatbot_answer(meeting_uuid, user_message)
+                    ai_response = chatbot_answer(meeting_uuid, user_message, user_id=user_id, db=db)
                     print(f"[CHATBOT] Used vector store for response")
             else:
                 print(f"[CHATBOT] Small transcript ({len(transcript_text)} chars), using simple response")
                 # Use simple response for smaller transcripts
-                ai_response = generate_simple_chat_response(user_message, transcript_text)
+                ai_response = generate_simple_chat_response(user_message, transcript_text, user_id=user_id, db=db)
             
             if not ai_response:
                 ai_response = "I couldn't generate a response. Please try rephrasing your question."

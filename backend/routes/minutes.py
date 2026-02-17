@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from utils.ai import generate_minutes_of_meeting
+from utils.ai_router import generate_minutes_of_meeting
 from datetime import datetime
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
@@ -68,7 +68,7 @@ def generate_meeting_minutes(meeting_id):
         return jsonify({'error': 'Empty transcript'}), 400
 
     try:
-        minutes_text = generate_minutes_of_meeting(transcript)
+        minutes_text = generate_minutes_of_meeting(transcript, user_id=user_id, db=db)
         
         # Parse JSON response
         try:

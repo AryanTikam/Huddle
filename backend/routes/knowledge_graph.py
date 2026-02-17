@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from utils.ai import generate_knowledge_graph
+from utils.ai_router import generate_knowledge_graph
 from datetime import datetime
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
@@ -63,7 +63,7 @@ def generate_graph(meeting_id):
     
     try:
         print(f"[DEBUG] Generating knowledge graph...")
-        graph = generate_knowledge_graph(transcript)
+        graph = generate_knowledge_graph(transcript, user_id=user_id, db=db)
         
         # Use consistent ID for storage
         storage_id = meeting.get('id', meeting_id)
