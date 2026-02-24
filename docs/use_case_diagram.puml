@@ -1,0 +1,137 @@
+@startuml Huddle Use Case Diagram
+
+title Huddle – AI-Powered Meeting Intelligence Platform\nUse Case Diagram
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+
+' ─────────────── Actors ───────────────
+actor "User"              as User
+actor "Meeting Host"      as Host
+actor "Meeting Participant" as Participant
+actor "AI Service\n(Gemini / Ollama)" as AI  #lightgray
+
+User <|-- Host
+User <|-- Participant
+
+' ─────────────── System boundary ───────────────
+rectangle "Huddle" {
+
+  ' ── Authentication ──────────────────────────
+  package "Authentication" {
+    usecase "Register Account"   as UC_Register
+    usecase "Log In"             as UC_Login
+    usecase "Log Out"            as UC_Logout
+  }
+
+  ' ── Meeting Management ──────────────────────
+  package "Meeting Management" {
+    usecase "Create Meeting\n(Upload Audio)"    as UC_CreateMeeting
+    usecase "View All Meetings"                 as UC_ViewMeetings
+    usecase "Search Meetings"                   as UC_SearchMeetings
+    usecase "Organize Meetings\ninto Folders"   as UC_Folders
+    usecase "View Meeting Details"              as UC_MeetingDetails
+    usecase "Delete Meeting"                    as UC_DeleteMeeting
+  }
+
+  ' ── Live (WebRTC) Meeting ───────────────────
+  package "Live Meeting (WebRTC)" {
+    usecase "Create Live\nMeeting Room"         as UC_CreateRoom
+    usecase "Join Meeting Room"                 as UC_JoinRoom
+    usecase "Share Audio / Video"               as UC_AVStream
+    usecase "Mute / Unmute"                     as UC_Mute
+    usecase "View Real-Time\nTranscript"        as UC_LiveTranscript
+    usecase "End Meeting"                       as UC_EndMeeting
+  }
+
+  ' ── Recording & Transcription ───────────────
+  package "Recording & Transcription" {
+    usecase "Record Audio\n(In-Browser)"        as UC_RecordAudio
+    usecase "Capture Audio via\nChrome Extension" as UC_ExtensionCapture
+    usecase "Transcribe Audio"                  as UC_Transcribe
+    usecase "View Transcript"                   as UC_ViewTranscript
+    usecase "Search Within\nTranscript"         as UC_SearchTranscript
+  }
+
+  ' ── AI-Powered Analytics ────────────────────
+  package "AI-Powered Analytics" {
+    usecase "Generate Meeting\nSummary"         as UC_Summary
+    usecase "Extract Insights\n(Action Items,\nDecisions)"  as UC_Insights
+    usecase "Generate Meeting\nMinutes"         as UC_Minutes
+    usecase "View Knowledge\nGraph"             as UC_KnowledgeGraph
+    usecase "Chat with Meeting\n(AI Q&A)"       as UC_Chatbot
+  }
+
+  ' ── Export & Reports ────────────────────────
+  package "Export & Reports" {
+    usecase "Export Report\n(PDF / Text)"       as UC_Export
+  }
+
+  ' ── Settings ────────────────────────────────
+  package "Settings" {
+    usecase "Configure AI Provider\n(Cloud / Local Ollama)" as UC_Settings
+  }
+}
+
+' ─────────────── User associations ───────────────
+User  --> UC_Register
+User  --> UC_Login
+User  --> UC_Logout
+
+User  --> UC_ViewMeetings
+User  --> UC_SearchMeetings
+User  --> UC_Folders
+User  --> UC_MeetingDetails
+User  --> UC_DeleteMeeting
+
+User  --> UC_RecordAudio
+User  --> UC_ExtensionCapture
+User  --> UC_ViewTranscript
+User  --> UC_SearchTranscript
+
+User  --> UC_Summary
+User  --> UC_Insights
+User  --> UC_Minutes
+User  --> UC_KnowledgeGraph
+User  --> UC_Chatbot
+
+User  --> UC_Export
+User  --> UC_Settings
+
+Host  --> UC_CreateMeeting
+Host  --> UC_CreateRoom
+Host  --> UC_EndMeeting
+
+Participant --> UC_JoinRoom
+Participant --> UC_AVStream
+Participant --> UC_Mute
+Participant --> UC_LiveTranscript
+
+' ─────────────── Include / extend relationships ───────────────
+UC_CreateMeeting    ..> UC_Transcribe       : <<include>>
+UC_RecordAudio      ..> UC_Transcribe       : <<include>>
+UC_ExtensionCapture ..> UC_Transcribe       : <<include>>
+UC_CreateRoom       ..> UC_LiveTranscript   : <<include>>
+
+UC_Transcribe       ..> UC_Summary          : <<extend>>
+UC_Transcribe       ..> UC_Insights         : <<extend>>
+UC_Transcribe       ..> UC_Minutes          : <<extend>>
+UC_Transcribe       ..> UC_KnowledgeGraph   : <<extend>>
+
+UC_MeetingDetails   ..> UC_ViewTranscript   : <<include>>
+UC_MeetingDetails   ..> UC_Summary          : <<include>>
+UC_MeetingDetails   ..> UC_Insights         : <<include>>
+UC_MeetingDetails   ..> UC_Chatbot          : <<include>>
+
+UC_Export           ..> UC_MeetingDetails   : <<include>>
+
+' ─────────────── AI Service associations ───────────────
+AI --> UC_Transcribe
+AI --> UC_Summary
+AI --> UC_Insights
+AI --> UC_Minutes
+AI --> UC_KnowledgeGraph
+AI --> UC_Chatbot
+
+@enduml
