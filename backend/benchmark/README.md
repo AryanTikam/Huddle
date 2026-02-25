@@ -333,3 +333,17 @@ Part of the Huddle meeting intelligence system. Use for internal benchmarking an
 
 **Last Updated**: February 2026
 **Version**: 1.0
+
+<img width="827" height="742" alt="image" src="https://github.com/user-attachments/assets/3aa18b1c-6f9c-4dbd-84be-04955d660c71" />
+<img width="805" height="490" alt="image" src="https://github.com/user-attachments/assets/b8328b17-a3ba-42c0-a89e-3cec8cb87964" />
+<img width="823" height="767" alt="image" src="https://github.com/user-attachments/assets/4dae2d63-4480-4385-a34d-7947942d9624" />
+<img width="813" height="769" alt="image" src="https://github.com/user-attachments/assets/711f3ba1-af82-46a0-8b6b-378bcc15db43" />
+<img width="786" height="760" alt="image" src="https://github.com/user-attachments/assets/3bd50b83-8852-450e-ba2b-009b0d0aa6e2" />
+<img width="841" height="747" alt="image" src="https://github.com/user-attachments/assets/5bfa46b7-3e7c-4bb9-81ed-63423a5615da" />
+<img width="685" height="338" alt="image" src="https://github.com/user-attachments/assets/e45a02a4-cb20-4fdb-b074-aaec40c78550" />
+
+
+
+
+
+
