@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1'>
+  <title>STT Benchmark Report</title>
+  <style>
+
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                padding: 20px;
+                min-height: 100vh;
+            }
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+                background: white;
+                border-radius: 10px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                overflow: hidden;
+            }
+            .header {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 40px;
+                text-align: center;
+            }
+            .header h1 {
+                font-size: 2.5em;
+                margin-bottom: 10px;
+            }
+            .header p {
+                font-size: 1.1em;
+                opacity: 0.9;
+            }
+            .content {
+                padding: 40px;
+            }
+            .section {
+                margin-bottom: 40px;
+            }
+            .section h2 {
+                color: #333;
+                font-size: 1.8em;
+                margin-bottom: 20px;
+                border-bottom: 3px solid #667eea;
+                padding-bottom: 10px;
+            }
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 20px;
+                margin-bottom: 30px;
+            }
+            .stat-card {
+                background: #f5f5f5;
+                padding: 20px;
+                border-radius: 8px;
+                border-left: 4px solid #667eea;
+                text-align: center;
+            }
+            .stat-card .value {
+                font-size: 2em;
+                font-weight: bold;
+                color: #667eea;
+                margin: 10px 0;
+            }
+            .stat-card .label {
+                color: #666;
+                font-size: 0.9em;
+            }
+            .progress-bar {
+                background: #e0e0e0;
+                height: 30px;
+                border-radius: 5px;
+                overflow: hidden;
+                margin: 10px 0;
+            }
+            .progress-fill {
+                background: linear-gradient(90deg, #667eea, #764ba2);
+                height: 100%;
+                border-radius: 5px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: bold;
+                font-size: 0.9em;
+            }
+            .category {
+                margin-bottom: 20px;
+            }
+            .category-label {
+                font-weight: bold;
+                color: #333;
+                margin-bottom: 8px;
+            }
+            .test-result {
+                background: #f9f9f9;
+                padding: 20px;
+                margin-bottom: 15px;
+                border-radius: 8px;
+                border-left: 4px solid #ddd;
+            }
+            .test-result.excellent {
+                border-left-color: #27ae60;
+                background: #d5f4e6;
+            }
+            .test-result.good {
+                border-left-color: #f39c12;
+                background: #fef5e7;
+            }
+            .test-result.poor {
+                border-left-color: #e74c3c;
+                background: #fadbd8;
+            }
+            .test-name {
+                font-size: 1.2em;
+                font-weight: bold;
+                color: #333;
+                margin-bottom: 10px;
+            }
+            .test-meta {
+                font-size: 0.9em;
+                color: #666;
+                margin-bottom: 10px;
+            }
+            .metrics-row {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 15px;
+                margin-top: 10px;
+            }
+            .metric {
+                text-align: center;
+            }
+            .metric-value {
+                font-size: 1.3em;
+                font-weight: bold;
+                color: #667eea;
+            }
+            .metric-label {
+                font-size: 0.85em;
+                color: #666;
+            }
+            .footer {
+                background: #f5f5f5;
+                padding: 20px;
+                text-align: center;
+                color: #666;
+                font-size: 0.9em;
+            }
+            .grade {
+                display: inline-block;
+                background: #667eea;
+                color: white;
+                padding: 5px 10px;
+                border-radius: 5px;
+                font-weight: bold;
+                margin-left: 10px;
+            }
+        
+  </style>
+</head>
+<body>
+  <div class='container'>
+    <div class='header'>
+      <h1>🎤 STT Benchmark Report</h1>
+      <p>Generated: 2026-02-25 09:41:06</p>
+    </div>
+    <div class='content'>
+      <div class='section'>
+        <h2>📊 Summary</h2>
+        <div class='stats-grid'>
+          <div class='stat-card'>
+            <div class='label'>Total Tests</div>
+            <div class='value'>11</div>
+          </div>
+          <div class='stat-card'>
+            <div class='label'>Passed (≥80%)</div>
+            <div class='value'>11</div>
+          </div>
+          <div class='stat-card'>
+            <div class='label'>Overall Grade</div>
+            <div class='value'>A+</div>
+          </div>
+          <div class='stat-card'>
+            <div class='label'>Proficiency</div>
+            <div class='value'>100.00</div>
+          </div>
+          <div class='stat-card'>
+            <div class='label'>Accuracy</div>
+            <div class='value'>100.00%</div>
+          </div>
+          <div class='stat-card'>
+            <div class='label'>WER</div>
+            <div class='value'>0.00%</div>
+          </div>
+        </div>
+      </div>
+      <div class='section'>
+        <h2>🎯 Performance by Difficulty</h2>
+        <div class='category'>
+          <div class='category-label'>EASY</div>
+          <div class='progress-bar'>
+            <div class='progress-fill' style='width: 100.0%'>
+              100.00%
+            </div>
+          </div>
+        </div>
+        <div class='category'>
+          <div class='category-label'>MEDIUM</div>
+          <div class='progress-bar'>
+            <div class='progress-fill' style='width: 100.0%'>
+              100.00%
+            </div>
+          </div>
+        </div>
+        <div class='category'>
+          <div class='category-label'>HARD</div>
+          <div class='progress-bar'>
+            <div class='progress-fill' style='width: 100.0%'>
+              100.00%
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class='section'>
+        <h2>🌍 Performance by Language</h2>
+        <div class='category'>
+          <div class='category-label'>EN</div>
+          <div class='progress-bar'>
+            <div class='progress-fill' style='width: 100.0%'>
+              100.00%
+            </div>
+          </div>
+        </div>
+        <div class='category'>
+          <div class='category-label'>HI</div>
+          <div class='progress-bar'>
+            <div class='progress-fill' style='width: 100.0%'>
+              100.00%
+            </div>
+          </div>
+        </div>
+        <div class='category'>
+          <div class='category-label'>MR</div>
+          <div class='progress-bar'>
+            <div class='progress-fill' style='width: 100.0%'>
+              100.00%
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class='section'>
+        <h2>📝 Detailed Results</h2>
+        <div class='test-result excellent'>
+          <div class='test-name'>
+            English Formal
+            <span class='grade'>A+</span>
+          </div>
+          <div class='test-meta'>
+            Formal business meeting greeting • 
+            EN • 
+            EASY
+          </div>
+          <div class='metrics-row'>
+            <div class='metric'>
+              <div class='metric-value'>100.00%</div>
+              <div class='metric-label'>Accuracy</div>
+            </div>
+            <div class='metric'>
+              <div class='metric-value'>100.00%</div>
+              <div class='metric-label'>Similarity</div>
+            </div>
+            <div class='metric'>
+              <div class='metric-value'>100.00</div>
+              <div class='metric-label'>Proficiency</div>
+            </div>
+          </div>
+        </div>
+        <div class='test-result excellent'>
+          <div class='test-name'>
+            English Casual
+            <span class='grade'>A+</span>
+          </div>
+          <div class='test-meta'>
+            Casual conversation • 
+            EN • 
+            MEDIUM
+          </div>
+          <div class='metrics-row'>
+            <div class='metric'>
+              <div class='metric-value'>100.00%</div>
+              <div class='metric-label'>Accuracy</div>
+            </div>
+            <div class='metric'>
+              <div class='metric-value'>100.00%</div>
+              <div class='metric-label'>Similarity</div>
+            </div>
+            <div class='metric'>
+              <div class='metric-value'>100.00</div>
+              <div class='metric-label'>Proficiency</div>
+            </div>
+          </div>
+        </div>
+        <div class='test-result excellent'>
+          <div class='test-name'>
+            English Numbers
+            <span class='grade'>A+</span>
+          </div>
+          <div class='test-meta'>
+            Numbers and dates • 
+            EN • 
+            MEDIUM
+          </div>
+          <div class='metrics-row'>
+            <div class='metric'>
+              <div class='metric-value'>100.00%</div>
+              <div class='metric-label'>Accuracy</div>
+            </div>
+            <div class='metric'>
+              <div class='metric-value'>100.00%</div>
+              <div class='metric-label'>Similarity</div>
+            </div>
+            <div class='metric'>
+              <div class='metric-value'>100.00</div>
+              <div class='metric-label'>Proficiency</div>
+            </div>
+          </div>
+        </div>
+        <div class='test-result excellent'>
+          <div class='test-name'>
+            English Technical
+            <span class='grade'>A+</span>
+          </div>
+          <div class='test-meta'>
+            Technical terminology • 
+            EN • 
+            HARD
+          </div>
+          <div class='metrics-row'>
+            <div class='metric'>
+              <div class='metric-value'>100.00%</div>
+              <div class='metric-label'>Accuracy</div>
+            </div>
+            <div class='metric'>
+              <div class='metric-value'>100.00%</div>
+              <div class='metric-label'>Similarity</div>
+            </div>
+            <div class='metric'>
+              <div class='metric-value'>100.00</div>
+              <div class='metric-label'>Proficiency</div>
+            </div>
+          </div>
+        </div>
+        <div class='test-result excellent'>
+          <div class='test-name'>
+            Hindi Greeting
+            <span class='grade'>A+</span>
+          </div>
+          <div class='test-meta'>
+            Hindi greeting • 
+            HI • 
+            EASY
+          </div>
+          <div class='metrics-row'>
+            <div class='metric'>
+              <div class='metric-value'>100.00%</div>
+              <div class='metric-label'>Accuracy</div>
+            </div>
+            <div class='metric'>
+              <div class='metric-value'>100.00%</div>
+              <div class='metric-label'>Similarity</div>
+            </div>
+            <div class='metric'>
+              <div class='metric-value'>100.00</div>
+              <div class='metric-label'>Proficiency</div>
+            </div>
+          </div>
+        </div>
+        <div class='test-result excellent'>
+          <div class='test-name'>
+            Hindi Conversation
+            <span class='grade'>A+</span>
+          </div>
+          <div class='test-meta'>
+            Hindi casual conversation • 
+            HI • 
+            MEDIUM
+          </div>
+          <div class='metrics-row'>
+            <div class='metric'>
+              <div class='metric-value'>100.00%</div>
+              <div class='metric-label'>Accuracy</div>
+            </div>
+            <div class='metric'>
+              <div class='metric-value'>100.00%</div>
+              <div class='metric-label'>Similarity</div>
+            </div>
+            <div class='metric'>
+              <div class='metric-value'>100.00</div>
+              <div class='metric-label'>Proficiency</div>
+            </div>
+          </div>
+        </div>
+        <div class='test-result excellent'>
+          <div class='test-name'>
+            Marathi Greeting
+            <span class='grade'>A+</span>
+          </div>
+          <div class='test-meta'>
+            Marathi greeting • 
+            MR • 
+            EASY
+          </div>
+          <div class='metrics-row'>
+            <div class='metric'>
+              <div class='metric-value'>100.00%</div>
+              <div class='metric-label'>Accuracy</div>
+            </div>
+            <div class='metric'>
+              <div class='metric-value'>100.00%</div>
+              <div class='metric-label'>Similarity</div>
+            </div>
+            <div class='metric'>
+              <div class='metric-value'>100.00</div>
+              <div class='metric-label'>Proficiency</div>
+            </div>
+          </div>
+        </div>
+        <div class='test-result excellent'>
+          <div class='test-name'>
+            Marathi Meeting
+            <span class='grade'>A+</span>
+          </div>
+          <div class='test-meta'>
+            Marathi meeting context • 
+            MR • 
+            MEDIUM
+          </div>
+          <div class='metrics-row'>
+            <div class='metric'>
+              <div class='metric-value'>100.00%</div>
+              <div class='metric-label'>Accuracy</div>
+            </div>
+            <div class='metric'>
+              <div class='metric-value'>100.00%</div>
+              <div class='metric-label'>Similarity</div>
+            </div>
+            <div class='metric'>
+              <div class='metric-value'>100.00</div>
+              <div class='metric-label'>Proficiency</div>
+            </div>
+          </div>
+        </div>
+        <div class='test-result excellent'>
+          <div class='test-name'>
+            Mixed Language
+            <span class='grade'>A+</span>
+          </div>
+          <div class='test-meta'>
+            Mixed English-Hindi code-switching • 
+            EN • 
+            HARD
+          </div>
+          <div class='metrics-row'>
+            <div class='metric'>
+              <div class='metric-value'>100.00%</div>
+              <div class='metric-label'>Accuracy</div>
+            </div>
+            <div class='metric'>
+              <div class='metric-value'>100.00%</div>
+              <div class='metric-label'>Similarity</div>
+            </div>
+            <div class='metric'>
+              <div class='metric-value'>100.00</div>
+              <div class='metric-label'>Proficiency</div>
+            </div>
+          </div>
+        </div>
+        <div class='test-result excellent'>
+          <div class='test-name'>
+            With Acronyms
+            <span class='grade'>A+</span>
+          </div>
+          <div class='test-meta'>
+            Text with acronyms • 
+            EN • 
+            HARD
+          </div>
+          <div class='metrics-row'>
+            <div class='metric'>
+              <div class='metric-value'>100.00%</div>
+              <div class='metric-label'>Accuracy</div>
+            </div>
+            <div class='metric'>
+              <div class='metric-value'>100.00%</div>
+              <div class='metric-label'>Similarity</div>
+            </div>
+            <div class='metric'>
+              <div class='metric-value'>100.00</div>
+              <div class='metric-label'>Proficiency</div>
+            </div>
+          </div>
+        </div>
+        <div class='test-result excellent'>
+          <div class='test-name'>
+            With Punctuation
+            <span class='grade'>A+</span>
+          </div>
+          <div class='test-meta'>
+            Text with punctuation and special markers • 
+            EN • 
+            MEDIUM
+          </div>
+          <div class='metrics-row'>
+            <div class='metric'>
+              <div class='metric-value'>100.00%</div>
+              <div class='metric-label'>Accuracy</div>
+            </div>
+            <div class='metric'>
+              <div class='metric-value'>100.00%</div>
+              <div class='metric-label'>Similarity</div>
+            </div>
+            <div class='metric'>
+              <div class='metric-value'>100.00</div>
+              <div class='metric-label'>Proficiency</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class='footer'>
+      <p>STT Benchmark Report | Models: whisper-small | Results automatically generated</p>
+    </div>
+  </div>
+</body>
+</html>
