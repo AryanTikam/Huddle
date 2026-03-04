@@ -4,6 +4,7 @@ from utils.ai_router import generate_knowledge_graph
 from datetime import datetime
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
+import json
 
 knowledge_graph_bp = Blueprint('knowledge_graph', __name__)
 
@@ -64,6 +65,42 @@ def generate_graph(meeting_id):
     try:
         print(f"[DEBUG] Generating knowledge graph...")
         graph = generate_knowledge_graph(transcript, user_id=user_id, db=db)
+        
+        # If graph is a string (raw LLM response), try to parse it
+        if isinstance(graph, str):
+            print(f"[DEBUG] Knowledge graph returned as string, attempting JSON parse...")
+            try:
+                graph_text = graph.strip()
+                if graph_text.startswith('```json'):
+                    graph_text = graph_text[7:]
+                elif graph_text.startswith('```'):
+                    graph_text = graph_text[3:]
+                if graph_text.endswith('```'):
+                    graph_text = graph_text[:-3]
+                graph_text = graph_text.strip()
+                # Extract JSON object
+                if not graph_text.startswith('{'):
+                    start = graph_text.find('{')
+                    if start != -1:
+                        graph_text = graph_text[start:]
+                if not graph_text.endswith('}'):
+                    end = graph_text.rfind('}')
+                    if end != -1:
+                        graph_text = graph_text[:end + 1]
+                graph = json.loads(graph_text)
+            except (json.JSONDecodeError, Exception) as e:
+                print(f"[DEBUG] Failed to parse graph string: {e}")
+                graph = {"nodes": [], "edges": [], "topics": [], "action_items": []}
+        
+        # Validate graph has required fields
+        if not isinstance(graph, dict):
+            graph = {"nodes": [], "edges": [], "topics": [], "action_items": []}
+        graph.setdefault('nodes', [])
+        graph.setdefault('edges', [])
+        graph.setdefault('topics', [])
+        graph.setdefault('action_items', [])
+        
+        print(f"[DEBUG] Graph has {len(graph['nodes'])} nodes and {len(graph['edges'])} edges")
         
         # Use consistent ID for storage
         storage_id = meeting.get('id', meeting_id)

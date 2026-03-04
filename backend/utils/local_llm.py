@@ -405,16 +405,29 @@ Return ONLY valid JSON in this exact format:
         response = _generate(prompt, model=model)
         json_text = response.strip()
         
+        # Remove markdown code fences
         if json_text.startswith('```json'):
             json_text = json_text[7:]
         elif json_text.startswith('```'):
             json_text = json_text[3:]
         if json_text.endswith('```'):
             json_text = json_text[:-3]
+        json_text = json_text.strip()
+        
+        # Try to extract JSON object if there's extra text around it
+        if not json_text.startswith('{'):
+            start = json_text.find('{')
+            if start != -1:
+                json_text = json_text[start:]
+        if not json_text.endswith('}'):
+            end = json_text.rfind('}')
+            if end != -1:
+                json_text = json_text[:end + 1]
         
         result = json.loads(json_text)
         
         if not isinstance(result, dict):
+            print(f"[LOCAL_LLM] Knowledge graph result is not a dict, using fallback")
             return _create_fallback_graph(text)
         
         result.setdefault('nodes', [])
@@ -422,48 +435,134 @@ Return ONLY valid JSON in this exact format:
         result.setdefault('topics', [])
         result.setdefault('action_items', [])
         
+        # Ensure we have at least some nodes
+        if not result['nodes']:
+            print(f"[LOCAL_LLM] Knowledge graph has empty nodes, enriching with fallback")
+            fallback = _create_fallback_graph(text)
+            result['nodes'] = fallback['nodes']
+            result['edges'] = fallback.get('edges', [])
+            if not result['topics']:
+                result['topics'] = fallback.get('topics', [])
+        
         return result
+    except json.JSONDecodeError as e:
+        print(f"[LOCAL_LLM] Knowledge graph JSON parse error: {e}")
+        print(f"[LOCAL_LLM] Raw response (first 500 chars): {response[:500] if response else 'empty'}")
+        return _create_fallback_graph(text)
     except Exception as e:
         print(f"[LOCAL_LLM] Knowledge graph extraction error: {e}")
         return _create_fallback_graph(text)
 
 
 def _create_fallback_graph(text):
-    """Create a simple fallback graph when parsing fails"""
-    words = text.split()
-    people_indicators = ['said', 'mentioned', 'asked', 'replied', 'stated', 'Speaker']
-    projects_indicators = ['project', 'initiative', 'product', 'system', 'platform']
+    """Create a fallback graph by extracting key terms from the text"""
+    import re
+    text_lower = text.lower()
     
     nodes = []
     edges = []
     topics = []
+    node_ids = set()
     
-    if any(indicator in text.lower() for indicator in people_indicators):
-        nodes.append({
-            "id": "generic_participant",
-            "label": "Meeting Participant",
-            "type": "person",
-            "properties": {"role": "participant"}
-        })
+    def add_node(node_id, label, node_type, properties=None):
+        if node_id not in node_ids:
+            nodes.append({
+                "id": node_id,
+                "label": label,
+                "type": node_type,
+                "properties": properties or {}
+            })
+            node_ids.add(node_id)
     
-    if any(indicator in text.lower() for indicator in projects_indicators):
-        nodes.append({
-            "id": "generic_project",
-            "label": "Discussed Project",
-            "type": "project",
-            "properties": {"status": "mentioned"}
-        })
+    # Always add a central meeting node
+    add_node("meeting_main", "Meeting Discussion", "meeting", {"role": "central"})
     
-    common_topics = ['meeting', 'discussion', 'project', 'team', 'work', 'plan']
-    for topic in common_topics:
-        if topic in text.lower():
-            topics.append(topic)
+    # Extract speaker names ("Speaker 1:", "Speaker 2:", "John:", etc.)
+    speaker_pattern = re.findall(r'(?:^|\n)\s*(Speaker\s*\d+|[A-Z][a-z]+(?:\s[A-Z][a-z]+)?)\s*:', text)
+    seen_speakers = set()
+    for speaker in speaker_pattern:
+        speaker_clean = speaker.strip()
+        if speaker_clean.lower() not in seen_speakers and len(speaker_clean) > 1:
+            seen_speakers.add(speaker_clean.lower())
+            sid = f"person_{speaker_clean.lower().replace(' ', '_')}"
+            add_node(sid, speaker_clean, "person", {"role": "participant"})
+            edges.append({"source": sid, "target": "meeting_main", "relationship": "participated in", "weight": 1.0})
+    
+    # If no speakers found, add a generic participant
+    if not seen_speakers:
+        add_node("generic_participant", "Meeting Participant", "person", {"role": "participant"})
+        edges.append({"source": "generic_participant", "target": "meeting_main", "relationship": "participated in", "weight": 1.0})
+    
+    # Extract topic-related keywords
+    topic_indicators = {
+        'project': ('project', 'project'),
+        'design': ('design', 'topic'),
+        'review': ('review', 'topic'),
+        'testing': ('testing', 'topic'),
+        'development': ('development', 'topic'),
+        'planning': ('planning', 'topic'),
+        'budget': ('budget', 'topic'),
+        'deadline': ('deadline', 'topic'),
+        'update': ('status update', 'topic'),
+        'sprint': ('sprint', 'topic'),
+        'deployment': ('deployment', 'topic'),
+        'architecture': ('architecture', 'topic'),
+        'database': ('database', 'technology'),
+        'api': ('API', 'technology'),
+        'frontend': ('frontend', 'technology'),
+        'backend': ('backend', 'technology'),
+        'reading': ('reading', 'topic'),
+        'learning': ('learning', 'topic'),
+        'strategy': ('strategy', 'topic'),
+        'training': ('training', 'topic'),
+        'discussion': ('discussion', 'topic'),
+        'presentation': ('presentation', 'topic'),
+        'analysis': ('analysis', 'topic'),
+        'improvement': ('improvement', 'topic'),
+    }
+    
+    for keyword, (label, ntype) in topic_indicators.items():
+        if keyword in text_lower:
+            nid = f"topic_{keyword}"
+            add_node(nid, label.capitalize(), ntype, {"mentioned": True})
+            edges.append({"source": "meeting_main", "target": nid, "relationship": "discussed", "weight": 1.0})
+            topics.append(label)
+    
+    # Extract action-related items  
+    action_keywords = ['action item', 'todo', 'follow up', 'need to', 'should', 'will', 'must']
+    for keyword in action_keywords:
+        if keyword in text_lower:
+            nid = f"action_{keyword.replace(' ', '_')}"
+            add_node(nid, f"Action: {keyword.capitalize()}", "action", {"status": "identified"})
+            edges.append({"source": "meeting_main", "target": nid, "relationship": "generated", "weight": 0.8})
+            break  # Only add one action node from fallback
+    
+    # Ensure we have at least 3 nodes for a meaningful graph
+    if len(nodes) < 3:
+        # Extract the most common significant words as topics
+        words = re.findall(r'\b[a-zA-Z]{4,}\b', text)
+        word_freq = {}
+        stop_words = {'this', 'that', 'with', 'from', 'have', 'been', 'were', 'they', 'their', 'what', 'when', 'will', 'would', 'could', 'should', 'about', 'which', 'there', 'these', 'those', 'some', 'other', 'than', 'then', 'also', 'just', 'more', 'very', 'your', 'said', 'like'}
+        for w in words:
+            wl = w.lower()
+            if wl not in stop_words:
+                word_freq[wl] = word_freq.get(wl, 0) + 1
+        
+        sorted_words = sorted(word_freq.items(), key=lambda x: x[1], reverse=True)
+        for word, freq in sorted_words[:5]:
+            if len(nodes) >= 6:
+                break
+            nid = f"topic_{word}"
+            if nid not in node_ids:
+                add_node(nid, word.capitalize(), "topic", {"frequency": freq})
+                edges.append({"source": "meeting_main", "target": nid, "relationship": "mentioned", "weight": 0.5})
+                topics.append(word)
     
     return {
         "nodes": nodes,
         "edges": edges,
-        "topics": topics[:5],
-        "action_items": []
+        "topics": topics[:10],
+        "action_items": _extract_action_items(text) if text else []
     }
 
 
