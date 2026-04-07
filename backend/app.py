@@ -7,6 +7,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from bson.objectid import ObjectId
+import re
 import os
 import uuid
 import traceback
@@ -41,11 +42,19 @@ if chrome_extension_ids:
         if ext_id:
             allowed_origins.append(f'chrome-extension://{ext_id}')
 
+# Always allow local frontend development origins, even if deployment env flags are set.
+LOCAL_ORIGIN_PATTERNS = [
+    re.compile(r'^http://localhost(?::\d+)?$'),
+    re.compile(r'^http://127\.0\.0\.1(?::\d+)?$'),
+]
+
 def is_allowed_origin(origin):
     """Check if origin is allowed, supporting chrome-extension:// dynamically."""
     if not origin:
         return False
     if origin in allowed_origins:
+        return True
+    if any(pattern.match(origin) for pattern in LOCAL_ORIGIN_PATTERNS):
         return True
     # Allow any chrome-extension:// origin (sandboxed by Chrome)
     if origin.startswith('chrome-extension://'):
