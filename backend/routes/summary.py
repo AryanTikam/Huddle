@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from utils.ai import generate_summary
+from utils.ai_router import generate_summary
 from datetime import datetime
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
@@ -136,7 +136,7 @@ Speaker 1 (00:07:00): Great. Let's reconvene next Friday to review our progress.
     
     try:
         print(f"[DEBUG] Generating summary...")
-        summary_text = generate_summary(transcript)
+        summary_text = generate_summary(transcript, user_id=user_id, db=db)
         
         print(f"[DEBUG] Raw summary response: {summary_text[:200]}...")  # Print first 200 chars
         

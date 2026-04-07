@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'; 
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'; 
 import { 
   Search, 
   Filter, 
@@ -685,10 +685,21 @@ const AllMeetings = ({ onMeetingClick }) => {
     );
   };
 
+  // Debounced search
+  const searchTimerRef = useRef(null);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
+  useEffect(() => {
+    searchTimerRef.current = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 400);
+    return () => clearTimeout(searchTimerRef.current);
+  }, [searchTerm]);
+
   // Effect hooks
   useEffect(() => {
-    fetchMeetings(searchTerm, selectedFolder, page);
-  }, [searchTerm, selectedFolder, page, sortBy, sortOrder]);
+    fetchMeetings(debouncedSearchTerm, selectedFolder, page);
+  }, [debouncedSearchTerm, selectedFolder, page, sortBy, sortOrder]);
 
   useEffect(() => {
     fetchFolders();
@@ -726,21 +737,6 @@ const AllMeetings = ({ onMeetingClick }) => {
     setSortBy(newSortBy);
     setPage(1);
   };
-
-  if (loading) {
-    return (
-      <div className="p-6 space-y-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-64 bg-gray-200 dark:bg-gray-700 rounded-2xl"></div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="p-6 space-y-6 animate-fade-in">
@@ -901,7 +897,17 @@ const AllMeetings = ({ onMeetingClick }) => {
       )}
 
       {/* Meetings Display */}
-      {sortedMeetings.length === 0 ? (
+      {loading ? (
+        <div className="py-8">
+          <div className="animate-pulse">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-64 bg-gray-200 dark:bg-gray-700 rounded-2xl"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : sortedMeetings.length === 0 ? (
         <div className="text-center py-12">
           <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">

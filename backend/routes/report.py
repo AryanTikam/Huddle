@@ -1663,3 +1663,64 @@ def generate_specific_pdf(meeting, content_type, content, content_data):
         as_attachment=True,
         download_name=f"{content_type}_{meeting.get('id')}.pdf"
     )
+
+def generate_specific_json(meeting, content_type, content, content_data):
+    """Generate JSON for a specific content type"""
+    report_data = {
+        'meeting_info': {
+            'id': meeting.get('id'),
+            'title': meeting.get('title'),
+            'created_at': _format_datetime_for_display(meeting.get('created_at')),
+            'language': meeting.get('language'),
+            'status': meeting.get('status'),
+            'participants': meeting.get('participants', []),
+            'duration': _calculate_duration(meeting)
+        },
+        content_type: content,
+        'generated_at': datetime.utcnow().isoformat()
+    }
+
+    json_str = json.dumps(report_data, indent=2, ensure_ascii=False)
+    buffer = io.BytesIO(json_str.encode('utf-8'))
+
+    return send_file(
+        buffer,
+        mimetype='application/json',
+        as_attachment=True,
+        download_name=f"{content_type}_{meeting.get('id')}.json"
+    )
+
+def generate_specific_txt(meeting, content_type, content, content_data):
+    """Generate TXT for a specific content type"""
+    title_text = content_type.replace('_', ' ').upper()
+
+    lines = [
+        "=" * 80,
+        f"{title_text} REPORT",
+        "=" * 80,
+        "",
+        f"Title: {meeting.get('title', 'N/A')}",
+        f"Meeting ID: {meeting.get('id', 'N/A')}",
+        f"Date: {_format_datetime_for_display(meeting.get('created_at'))}",
+        f"Language: {meeting.get('language', 'N/A')}",
+        f"Status: {meeting.get('status', 'N/A')}",
+        f"Duration: {_calculate_duration(meeting)}",
+        f"Participants: {', '.join(meeting.get('participants', []))}",
+        "",
+        "=" * 80,
+        title_text,
+        "=" * 80,
+        "",
+        content if isinstance(content, str) else json.dumps(content, indent=2),
+        "",
+    ]
+
+    report_text = "\n".join(lines)
+    buffer = io.BytesIO(report_text.encode('utf-8'))
+
+    return send_file(
+        buffer,
+        mimetype='text/plain',
+        as_attachment=True,
+        download_name=f"{content_type}_{meeting.get('id')}.txt"
+    )

@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from utils.ai import generate_meeting_insights
+from utils.ai_router import generate_meeting_insights
 from datetime import datetime
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
@@ -92,7 +92,7 @@ Speaker 3: API documentation and testing environment preparation.
 
     try:
         print(f"[DEBUG] Generating insights...")
-        insights_text = generate_meeting_insights(transcript)
+        insights_text = generate_meeting_insights(transcript, user_id=user_id, db=db)
         
         # Parse JSON response
         try:

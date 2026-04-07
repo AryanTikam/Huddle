@@ -3,7 +3,7 @@ import { Settings, Moon, Sun, Brain, Bell, User, LogOut, Edit, Menu } from 'luci
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 
-const Header = ({ onToggleSidebar, isExtension }) => {
+const Header = ({ onToggleSidebar, isExtension, onNavigate }) => {
   const { isDarkMode, toggleTheme } = useTheme();
   const { user, logout, makeAuthenticatedRequest } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -173,7 +173,11 @@ const Header = ({ onToggleSidebar, isExtension }) => {
             </button>
 
             {/* Settings */}
-            <button className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 transform hover:scale-105">
+            <button 
+              onClick={() => onNavigate && onNavigate('settings')}
+              className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 transform hover:scale-105"
+              title="AI Settings"
+            >
               <Settings className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             </button>
 
@@ -222,7 +226,7 @@ const Header = ({ onToggleSidebar, isExtension }) => {
                     <button
                       onClick={() => {
                         setShowProfileMenu(false);
-                        // Open settings - you can implement this
+                        if (onNavigate) onNavigate('settings');
                       }}
                       className="w-full flex items-center space-x-3 px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                     >

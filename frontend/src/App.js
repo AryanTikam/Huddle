@@ -14,6 +14,7 @@ import Auth from './components/Auth';
 import LoadingSpinner from './components/LoadingSpinner';
 import LandingPage from './pages/LandingPage';
 import CaptureAudio from './pages/CaptureAudio';
+import Settings from './pages/Settings';
 
 const AppContent = () => {
   // Detect Chrome extension environment
@@ -179,6 +180,12 @@ const AppContent = () => {
             onTabChange={setActiveTab}
           />
         );
+      case 'settings':
+        return (
+          <Settings 
+            onNavigate={setActiveView}
+          />
+        );
       default: 
         return <Dashboard onNavigate={setActiveView} />;
     }
@@ -186,7 +193,7 @@ const AppContent = () => {
 
   return (
     <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors ${isExtension ? 'extension-mode' : ''}`}>
-      <Header onToggleSidebar={isExtension ? () => setSidebarOpen(!sidebarOpen) : undefined} isExtension={isExtension} />
+      <Header onToggleSidebar={isExtension ? () => setSidebarOpen(!sidebarOpen) : undefined} isExtension={isExtension} onNavigate={setActiveView} />
       <div className="flex h-screen">
         {!['webrtc-meeting', 'join-meeting'].includes(activeView) && (
           <>

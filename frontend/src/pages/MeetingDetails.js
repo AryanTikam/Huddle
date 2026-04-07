@@ -583,10 +583,88 @@ const MeetingDetails = ({ meetingId, activeTab, onBack, onTabChange }) => {
   );
 };
 
+// Normalize LLM summary fields that might come as objects instead of arrays
+const normalizeSummary = (s) => {
+  if (!s || typeof s !== 'object') return s;
+  const normalized = { ...s };
+
+  // Helper: convert an object/value to an array of strings
+  const toStringArray = (val) => {
+    if (Array.isArray(val)) {
+      return val.map(item => (typeof item === 'string' ? item : (typeof item === 'object' && item !== null ? Object.values(item).flat().join(': ') : String(item))));
+    }
+    if (val && typeof val === 'object') {
+      return Object.values(val).map(v => (typeof v === 'string' ? v : JSON.stringify(v)));
+    }
+    if (typeof val === 'string') return [val];
+    return [];
+  };
+
+  // Normalize next_steps (expected: array of strings)
+  if (normalized.next_steps && !Array.isArray(normalized.next_steps)) {
+    normalized.next_steps = toStringArray(normalized.next_steps);
+  } else if (Array.isArray(normalized.next_steps)) {
+    normalized.next_steps = normalized.next_steps.map(step =>
+      typeof step === 'string' ? step : (typeof step === 'object' && step !== null ? Object.values(step).join(': ') : String(step))
+    );
+  }
+
+  // Normalize key_points (expected: array of objects with {point, importance})
+  if (normalized.key_points && !Array.isArray(normalized.key_points)) {
+    normalized.key_points = Object.values(normalized.key_points).map(v =>
+      typeof v === 'string' ? { point: v, importance: 'medium' } : v
+    );
+  } else if (Array.isArray(normalized.key_points)) {
+    normalized.key_points = normalized.key_points.map(kp =>
+      typeof kp === 'string' ? { point: kp, importance: 'medium' } : kp
+    );
+  }
+
+  // Normalize decisions (expected: array of objects with {decision, context})
+  if (normalized.decisions && !Array.isArray(normalized.decisions)) {
+    normalized.decisions = Object.values(normalized.decisions).map(v =>
+      typeof v === 'string' ? { decision: v, context: '' } : v
+    );
+  } else if (Array.isArray(normalized.decisions)) {
+    normalized.decisions = normalized.decisions.map(d =>
+      typeof d === 'string' ? { decision: d, context: '' } : d
+    );
+  }
+
+  // Normalize action_items (expected: array of objects with {task, priority, owner, deadline})
+  if (normalized.action_items && !Array.isArray(normalized.action_items)) {
+    normalized.action_items = Object.values(normalized.action_items).map(v =>
+      typeof v === 'string' ? { task: v, priority: 'medium', owner: 'Unassigned', deadline: 'TBD' } : v
+    );
+  } else if (Array.isArray(normalized.action_items)) {
+    normalized.action_items = normalized.action_items.map(item =>
+      typeof item === 'string' ? { task: item, priority: 'medium', owner: 'Unassigned', deadline: 'TBD' } : item
+    );
+  }
+
+  // Normalize key_quotes (expected: array of objects with {quote, speaker})
+  if (normalized.key_quotes && !Array.isArray(normalized.key_quotes)) {
+    normalized.key_quotes = Object.values(normalized.key_quotes).map(v =>
+      typeof v === 'string' ? { quote: v, speaker: 'Unknown' } : v
+    );
+  } else if (Array.isArray(normalized.key_quotes)) {
+    normalized.key_quotes = normalized.key_quotes.map(q =>
+      typeof q === 'string' ? { quote: q, speaker: 'Unknown' } : q
+    );
+  }
+
+  // Normalize executive_summary (expected: string)
+  if (normalized.executive_summary && typeof normalized.executive_summary === 'object') {
+    normalized.executive_summary = Object.values(normalized.executive_summary).join(' ');
+  }
+
+  return normalized;
+};
+
 const SummaryView = ({ summary, meetingId }) => {
   const { makeAuthenticatedRequest, downloadFile } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedSummary, setGeneratedSummary] = useState(summary);
+  const [generatedSummary, setGeneratedSummary] = useState(normalizeSummary(summary));
   const [error, setError] = useState('');
 
   const generateSummary = async () => {
@@ -601,7 +679,7 @@ const SummaryView = ({ summary, meetingId }) => {
 
       if (response.ok) {
         const data = await response.json();
-        setGeneratedSummary(data.summary);
+        setGeneratedSummary(normalizeSummary(data.summary));
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to generate summary');
@@ -1285,10 +1363,120 @@ const MinutesView = ({ minutes, meetingId }) => {
   );
 };
 
+// Normalize LLM insights fields that might come as objects instead of expected types
+const normalizeInsights = (ins) => {
+  if (!ins || typeof ins !== 'object') return ins;
+  const n = { ...ins };
+
+  // Helper: ensure value is a string
+  const ensureString = (val) => {
+    if (typeof val === 'string') return val;
+    if (val && typeof val === 'object') return Object.values(val).join(' ');
+    return String(val ?? '');
+  };
+
+  // Helper: ensure value is an array, converting objects to arrays
+  const ensureArray = (val) => {
+    if (Array.isArray(val)) return val;
+    if (val && typeof val === 'object') return Object.values(val);
+    if (typeof val === 'string') return [val];
+    return [];
+  };
+
+  // Helper: ensure each element is a string (for flat string arrays)
+  const ensureStringArray = (val) => {
+    return ensureArray(val).map(item =>
+      typeof item === 'string' ? item : (typeof item === 'object' && item !== null ? Object.values(item).join(': ') : String(item))
+    );
+  };
+
+  // Normalize overview
+  if (n.overview && typeof n.overview === 'object') {
+    n.overview = {
+      ...n.overview,
+      summary: ensureString(n.overview.summary),
+      overall_sentiment: ensureString(n.overview.overall_sentiment),
+      engagement_level: ensureString(n.overview.engagement_level),
+    };
+  }
+
+  // Normalize key_themes (array of objects)
+  if (n.key_themes) {
+    n.key_themes = ensureArray(n.key_themes).map(t =>
+      typeof t === 'string' ? { theme: t, frequency: 1, importance: 'medium', description: t }
+      : { ...t, theme: ensureString(t.theme), description: ensureString(t.description) }
+    );
+  }
+
+  // Normalize participation_analysis
+  if (n.participation_analysis && typeof n.participation_analysis === 'object') {
+    const pa = n.participation_analysis;
+    if (pa.most_active_speakers) {
+      pa.most_active_speakers = ensureArray(pa.most_active_speakers).map(s =>
+        typeof s === 'string' ? { name: s, contribution_percentage: 0, engagement: 'unknown' } : s
+      );
+    }
+    if (pa.quiet_participants) {
+      pa.quiet_participants = ensureStringArray(pa.quiet_participants);
+    }
+    pa.speaking_distribution = ensureString(pa.speaking_distribution);
+  }
+
+  // Normalize sentiment_analysis
+  if (n.sentiment_analysis && typeof n.sentiment_analysis === 'object') {
+    const sa = n.sentiment_analysis;
+    sa.overall_tone = ensureString(sa.overall_tone);
+    if (sa.positive_moments) {
+      sa.positive_moments = ensureArray(sa.positive_moments).map(m =>
+        typeof m === 'string' ? { moment: m, timestamp: '' } : { ...m, moment: ensureString(m.moment) }
+      );
+    }
+    if (sa.concerns_raised) {
+      sa.concerns_raised = ensureArray(sa.concerns_raised).map(c =>
+        typeof c === 'string' ? { concern: c, severity: 'medium' } : { ...c, concern: ensureString(c.concern) }
+      );
+    }
+    if (sa.agreements) sa.agreements = ensureStringArray(sa.agreements);
+    if (sa.conflicts) sa.conflicts = ensureStringArray(sa.conflicts);
+  }
+
+  // Normalize follow_up_recommendations
+  if (n.follow_up_recommendations) {
+    n.follow_up_recommendations = ensureArray(n.follow_up_recommendations).map(r =>
+      typeof r === 'string' ? { recommendation: r, priority: 'medium', rationale: '' }
+      : { ...r, recommendation: ensureString(r.recommendation), rationale: ensureString(r.rationale) }
+    );
+  }
+
+  // Normalize risks_and_concerns
+  if (n.risks_and_concerns) {
+    n.risks_and_concerns = ensureArray(n.risks_and_concerns).map(r =>
+      typeof r === 'string' ? { risk: r, impact: 'medium', mitigation: '' }
+      : { ...r, risk: ensureString(r.risk), mitigation: ensureString(r.mitigation) }
+    );
+  }
+
+  // Normalize interesting_observations (should be array of strings)
+  if (n.interesting_observations) {
+    n.interesting_observations = ensureStringArray(n.interesting_observations);
+  }
+
+  // Normalize key_metrics - ensure all values are renderable (string/number, not objects)
+  if (n.key_metrics && typeof n.key_metrics === 'object') {
+    const km = {};
+    for (const [key, value] of Object.entries(n.key_metrics)) {
+      km[key] = (typeof value === 'object' && value !== null) ? Object.values(value).join(', ') : value;
+    }
+    n.key_metrics = km;
+  }
+
+  return n;
+};
+
 const InsightsView = ({ insights, meetingId }) => {
   const { makeAuthenticatedRequest, downloadFile } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedInsights, setGeneratedInsights] = useState(insights);
+  const [generatedInsights, setGeneratedInsights] = useState(normalizeInsights(insights));
   const [error, setError] = useState('');
 
   const generateInsights = async () => {
@@ -1312,7 +1500,7 @@ const InsightsView = ({ insights, meetingId }) => {
         console.log('[DEBUG] Is object?', data.insights && typeof data.insights === 'object');
         console.log('[DEBUG] Has text field?', data.insights?.text);
         
-        setGeneratedInsights(data.insights);
+        setGeneratedInsights(normalizeInsights(data.insights));
       } else {
         throw new Error(data.error || 'Failed to generate insights');
       }
