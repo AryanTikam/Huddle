@@ -1,0 +1,201 @@
+================================================================================
+STT BENCHMARK REPORT
+================================================================================
+Generated: 2026-02-25 09:41:06
+
+EXECUTIVE SUMMARY
+--------------------------------------------------------------------------------
+Total Tests: 11
+Passed (≥80%): 11
+Overall Grade: A+
+Average Proficiency: 100.00/100
+Average Accuracy: 100.00%
+Word Error Rate: 0.00%
+Execution Time: 0:00:00.008152
+
+PERFORMANCE BY DIFFICULTY
+--------------------------------------------------------------------------------
+EASY            | ████████████████████ | 100.00
+HARD            | ████████████████████ | 100.00
+MEDIUM          | ████████████████████ | 100.00
+
+PERFORMANCE BY LANGUAGE
+--------------------------------------------------------------------------------
+EN              | ████████████████████ | 100.00
+HI              | ████████████████████ | 100.00
+MR              | ████████████████████ | 100.00
+
+DETAILED RESULTS
+--------------------------------------------------------------------------------
+
+[1] ENGLISH_FORMAL
+    Type: Formal business meeting greeting
+    Language: EN | Difficulty: EASY
+    Reference: Hello, what are you doing today? I hope you're having a great day.
+    Output:    Hello, what are you doing today? I hope you're having a great day.
+
+    Metrics:
+      • Accuracy:    100.00%
+      • Similarity:  100.00%
+      • WER:           0.00%
+      • CER:           0.00%
+
+    Proficiency: 100.00 🟢 [EXCELLENT]
+    Grade: A+
+
+[2] ENGLISH_CASUAL
+    Type: Casual conversation
+    Language: EN | Difficulty: MEDIUM
+    Reference: Hey, how's it going? Did you finish that project we talked about?
+    Output:    Hey, how's it going? Did you finish that project we talked about?
+
+    Metrics:
+      • Accuracy:    100.00%
+      • Similarity:  100.00%
+      • WER:           0.00%
+      • CER:           0.00%
+
+    Proficiency: 100.00 🟢 [EXCELLENT]
+    Grade: A+
+
+[3] ENGLISH_NUMBERS
+    Type: Numbers and dates
+    Language: EN | Difficulty: MEDIUM
+
+    Reference: The meeting is scheduled for March 25th at 2:30 PM. We need at least 5 participa...
+    Output:    The meeting is scheduled for March 25th at 2:30 PM. We need at least 5 participa...
+
+    Metrics:
+      • Accuracy:    100.00%
+      • Similarity:  100.00%
+      • WER:           0.00%
+      • CER:           0.00%
+
+    Proficiency: 100.00 🟢 [EXCELLENT]
+    Grade: A+
+
+[4] ENGLISH_TECHNICAL
+    Type: Technical terminology
+    Language: EN | Difficulty: HARD
+
+    Reference: The API endpoint returns a 200 status code with JSON response containing user da...
+    Output:    The API endpoint returns a 200 status code with JSON response containing user da...
+
+    Metrics:
+      • Accuracy:    100.00%
+      • Similarity:  100.00%
+      • WER:           0.00%
+      • CER:           0.00%
+
+    Proficiency: 100.00 🟢 [EXCELLENT]
+    Grade: A+
+
+[5] HINDI_GREETING
+    Type: Hindi greeting
+    Language: HI | Difficulty: EASY
+    Reference: नमस्ते, आप कैसे हैं? आपका दिन कैसा चल रहा है?
+    Output:    नमस्ते, आप कैसे हैं? आपका दिन कैसा चल रहा है?
+
+    Metrics:
+      • Accuracy:    100.00%
+      • Similarity:  100.00%
+      • WER:           0.00%
+      • CER:           0.00%
+
+    Proficiency: 100.00 🟢 [EXCELLENT]
+    Grade: A+
+
+[6] HINDI_CONVERSATION
+    Type: Hindi casual conversation
+    Language: HI | Difficulty: MEDIUM
+    Reference: क्या आपने अपना काम पूरा किया है? मुझसे कल मिलना है।
+    Output:    क्या आपने अपना काम पूरा किया है? मुझसे कल मिलना है।
+
+    Metrics:
+      • Accuracy:    100.00%
+      • Similarity:  100.00%
+      • WER:           0.00%
+      • CER:           0.00%
+
+    Proficiency: 100.00 🟢 [EXCELLENT]
+    Grade: A+
+
+[7] MARATHI_GREETING
+    Type: Marathi greeting
+    Language: MR | Difficulty: EASY
+    Reference: नमस्कार, आप कसे आहात? आपचा दिवस कसा जात आहे?
+    Output:    नमस्कार, आप कसे आहात? आपचा दिवस कसा जात आहे?
+
+    Metrics:
+      • Accuracy:    100.00%
+      • Similarity:  100.00%
+      • WER:           0.00%
+      • CER:           0.00%
+
+    Proficiency: 100.00 🟢 [EXCELLENT]
+    Grade: A+
+
+[8] MARATHI_MEETING
+    Type: Marathi meeting context
+    Language: MR | Difficulty: MEDIUM
+    Reference: आमचे मीटिंग उद्या सकाळी दहा वाजता आहे. कृपया यास उपस्थित रहा.
+    Output:    आमचे मीटिंग उद्या सकाळी दहा वाजता आहे. कृपया यास उपस्थित रहा.
+
+    Metrics:
+      • Accuracy:    100.00%
+      • Similarity:  100.00%
+      • WER:           0.00%
+      • CER:           0.00%
+
+    Proficiency: 100.00 🟢 [EXCELLENT]
+    Grade: A+
+
+[9] MIXED_LANGUAGE
+    Type: Mixed English-Hindi code-switching
+    Language: EN | Difficulty: HARD
+    Reference: Hello नमस्ते, I want to build एक application that works in multiple languages.
+    Output:    Hello नमस्ते, I want to build एक application that works in multiple languages.
+
+    Metrics:
+      • Accuracy:    100.00%
+      • Similarity:  100.00%
+      • WER:           0.00%
+      • CER:           0.00%
+
+    Proficiency: 100.00 🟢 [EXCELLENT]
+    Grade: A+
+
+[10] WITH_ACRONYMS
+    Type: Text with acronyms
+    Language: EN | Difficulty: HARD
+
+    Reference: The API, URL, and JSON format are important for REST APIs. Our company uses CI/C...
+    Output:    The API, URL, and JSON format are important for REST APIs. Our company uses CI/C...
+
+    Metrics:
+      • Accuracy:    100.00%
+      • Similarity:  100.00%
+      • WER:           0.00%
+      • CER:           0.00%
+
+    Proficiency: 100.00 🟢 [EXCELLENT]
+    Grade: A+
+
+[11] WITH_PUNCTUATION
+    Type: Text with punctuation and special markers
+    Language: EN | Difficulty: MEDIUM
+    Reference: Wait... I said, 'Hello!' How much will it cost? Maybe 50%?
+    Output:    Wait... I said, 'Hello!' How much will it cost? Maybe 50%?
+
+    Metrics:
+      • Accuracy:    100.00%
+      • Similarity:  100.00%
+      • WER:           0.00%
+      • CER:           0.00%
+
+    Proficiency: 100.00 🟢 [EXCELLENT]
+    Grade: A+
+
+================================================================================
+END OF REPORT
+================================================================================

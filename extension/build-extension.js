@@ -19,7 +19,9 @@ try {
     INLINE_RUNTIME_CHUNK: 'false',  // Don't inline scripts (CSP requirement)
     GENERATE_SOURCEMAP: 'false',     // No sourcemaps for extension
     PUBLIC_URL: '.',                 // Use relative paths
-    CI: 'false'
+    CI: 'false',
+    REACT_APP_API_URL: 'http://localhost:5000/api',
+    REACT_APP_SOCKET_URL: 'http://localhost:5000'
   };
   
   // Use npx react-scripts build directly to avoid CI= prefix issue on Windows

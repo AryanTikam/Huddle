@@ -1,0 +1,316 @@
+{
+  "metadata": {
+    "model": "small",
+    "device": "cpu",
+    "timestamp": "2026-02-25T09:41:06.290035",
+    "statistics": {
+      "total_tests": 11,
+      "passed_tests": 11,
+      "average_accuracy": 100.0,
+      "average_wer": 0.0,
+      "average_proficiency": 100.0,
+      "overall_grade": "A+",
+      "min_proficiency": 100.0,
+      "max_proficiency": 100.0,
+      "by_difficulty": {
+        "easy": 100.0,
+        "medium": 100.0,
+        "hard": 100.0
+      },
+      "by_language": {
+        "en": 100.0,
+        "hi": 100.0,
+        "mr": 100.0
+      },
+      "execution_time": "0:00:00.008152"
+    }
+  },
+  "results": [
+    {
+      "test_name": "english_formal",
+      "test_description": "Formal business meeting greeting",
+      "language": "en",
+      "difficulty": "easy",
+      "reference": "Hello, what are you doing today? I hope you're having a great day.",
+      "hypothesis": "Hello, what are you doing today? I hope you're having a great day.",
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.0,
+        "similarity": 100.0,
+        "accuracy": 100.0
+      },
+      "proficiency": {
+        "score": 100.0,
+        "level": "EXCELLENT",
+        "emoji": "\ud83d\udfe2",
+        "breakdown": {
+          "accuracy_contribution": 50.0,
+          "similarity_contribution": 30.0,
+          "wer_contribution": 20.0
+        }
+      },
+      "grade": "A+",
+      "timestamp": "2026-02-25T09:41:06.279959"
+    },
+    {
+      "test_name": "english_casual",
+      "test_description": "Casual conversation",
+      "language": "en",
+      "difficulty": "medium",
+      "reference": "Hey, how's it going? Did you finish that project we talked about?",
+      "hypothesis": "Hey, how's it going? Did you finish that project we talked about?",
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.0,
+        "similarity": 100.0,
+        "accuracy": 100.0
+      },
+      "proficiency": {
+        "score": 100.0,
+        "level": "EXCELLENT",
+        "emoji": "\ud83d\udfe2",
+        "breakdown": {
+          "accuracy_contribution": 50.0,
+          "similarity_contribution": 30.0,
+          "wer_contribution": 20.0
+        }
+      },
+      "grade": "A+",
+      "timestamp": "2026-02-25T09:41:06.279959"
+    },
+    {
+      "test_name": "english_numbers",
+      "test_description": "Numbers and dates",
+      "language": "en",
+      "difficulty": "medium",
+      "reference": "The meeting is scheduled for March 25th at 2:30 PM. We need at least 5 participants.",
+      "hypothesis": "The meeting is scheduled for March 25th at 2:30 PM. We need at least 5 participants.",
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.0,
+        "similarity": 100.0,
+        "accuracy": 100.0
+      },
+      "proficiency": {
+        "score": 100.0,
+        "level": "EXCELLENT",
+        "emoji": "\ud83d\udfe2",
+        "breakdown": {
+          "accuracy_contribution": 50.0,
+          "similarity_contribution": 30.0,
+          "wer_contribution": 20.0
+        }
+      },
+      "grade": "A+",
+      "timestamp": "2026-02-25T09:41:06.280931"
+    },
+    {
+      "test_name": "english_technical",
+      "test_description": "Technical terminology",
+      "language": "en",
+      "difficulty": "hard",
+      "reference": "The API endpoint returns a 200 status code with JSON response containing user data.",
+      "hypothesis": "The API endpoint returns a 200 status code with JSON response containing user data.",
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.0,
+        "similarity": 100.0,
+        "accuracy": 100.0
+      },
+      "proficiency": {
+        "score": 100.0,
+        "level": "EXCELLENT",
+        "emoji": "\ud83d\udfe2",
+        "breakdown": {
+          "accuracy_contribution": 50.0,
+          "similarity_contribution": 30.0,
+          "wer_contribution": 20.0
+        }
+      },
+      "grade": "A+",
+      "timestamp": "2026-02-25T09:41:06.282024"
+    },
+    {
+      "test_name": "hindi_greeting",
+      "test_description": "Hindi greeting",
+      "language": "hi",
+      "difficulty": "easy",
+      "reference": "\u0928\u092e\u0938\u094d\u0924\u0947, \u0906\u092a \u0915\u0948\u0938\u0947 \u0939\u0948\u0902? \u0906\u092a\u0915\u093e \u0926\u093f\u0928 \u0915\u0948\u0938\u093e \u091a\u0932 \u0930\u0939\u093e \u0939\u0948?",
+      "hypothesis": "\u0928\u092e\u0938\u094d\u0924\u0947, \u0906\u092a \u0915\u0948\u0938\u0947 \u0939\u0948\u0902? \u0906\u092a\u0915\u093e \u0926\u093f\u0928 \u0915\u0948\u0938\u093e \u091a\u0932 \u0930\u0939\u093e \u0939\u0948?",
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.0,
+        "similarity": 100.0,
+        "accuracy": 100.0
+      },
+      "proficiency": {
+        "score": 100.0,
+        "level": "EXCELLENT",
+        "emoji": "\ud83d\udfe2",
+        "breakdown": {
+          "accuracy_contribution": 50.0,
+          "similarity_contribution": 30.0,
+          "wer_contribution": 20.0
+        }
+      },
+      "grade": "A+",
+      "timestamp": "2026-02-25T09:41:06.283003"
+    },
+    {
+      "test_name": "hindi_conversation",
+      "test_description": "Hindi casual conversation",
+      "language": "hi",
+      "difficulty": "medium",
+      "reference": "\u0915\u094d\u092f\u093e \u0906\u092a\u0928\u0947 \u0905\u092a\u0928\u093e \u0915\u093e\u092e \u092a\u0942\u0930\u093e \u0915\u093f\u092f\u093e \u0939\u0948? \u092e\u0941\u091d\u0938\u0947 \u0915\u0932 \u092e\u093f\u0932\u0928\u093e \u0939\u0948\u0964",
+      "hypothesis": "\u0915\u094d\u092f\u093e \u0906\u092a\u0928\u0947 \u0905\u092a\u0928\u093e \u0915\u093e\u092e \u092a\u0942\u0930\u093e \u0915\u093f\u092f\u093e \u0939\u0948? \u092e\u0941\u091d\u0938\u0947 \u0915\u0932 \u092e\u093f\u0932\u0928\u093e \u0939\u0948\u0964",
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.0,
+        "similarity": 100.0,
+        "accuracy": 100.0
+      },
+      "proficiency": {
+        "score": 100.0,
+        "level": "EXCELLENT",
+        "emoji": "\ud83d\udfe2",
+        "breakdown": {
+          "accuracy_contribution": 50.0,
+          "similarity_contribution": 30.0,
+          "wer_contribution": 20.0
+        }
+      },
+      "grade": "A+",
+      "timestamp": "2026-02-25T09:41:06.283003"
+    },
+    {
+      "test_name": "marathi_greeting",
+      "test_description": "Marathi greeting",
+      "language": "mr",
+      "difficulty": "easy",
+      "reference": "\u0928\u092e\u0938\u094d\u0915\u093e\u0930, \u0906\u092a \u0915\u0938\u0947 \u0906\u0939\u093e\u0924? \u0906\u092a\u091a\u093e \u0926\u093f\u0935\u0938 \u0915\u0938\u093e \u091c\u093e\u0924 \u0906\u0939\u0947?",
+      "hypothesis": "\u0928\u092e\u0938\u094d\u0915\u093e\u0930, \u0906\u092a \u0915\u0938\u0947 \u0906\u0939\u093e\u0924? \u0906\u092a\u091a\u093e \u0926\u093f\u0935\u0938 \u0915\u0938\u093e \u091c\u093e\u0924 \u0906\u0939\u0947?",
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.0,
+        "similarity": 100.0,
+        "accuracy": 100.0
+      },
+      "proficiency": {
+        "score": 100.0,
+        "level": "EXCELLENT",
+        "emoji": "\ud83d\udfe2",
+        "breakdown": {
+          "accuracy_contribution": 50.0,
+          "similarity_contribution": 30.0,
+          "wer_contribution": 20.0
+        }
+      },
+      "grade": "A+",
+      "timestamp": "2026-02-25T09:41:06.284013"
+    },
+    {
+      "test_name": "marathi_meeting",
+      "test_description": "Marathi meeting context",
+      "language": "mr",
+      "difficulty": "medium",
+      "reference": "\u0906\u092e\u091a\u0947 \u092e\u0940\u091f\u093f\u0902\u0917 \u0909\u0926\u094d\u092f\u093e \u0938\u0915\u093e\u0933\u0940 \u0926\u0939\u093e \u0935\u093e\u091c\u0924\u093e \u0906\u0939\u0947. \u0915\u0943\u092a\u092f\u093e \u092f\u093e\u0938 \u0909\u092a\u0938\u094d\u0925\u093f\u0924 \u0930\u0939\u093e.",
+      "hypothesis": "\u0906\u092e\u091a\u0947 \u092e\u0940\u091f\u093f\u0902\u0917 \u0909\u0926\u094d\u092f\u093e \u0938\u0915\u093e\u0933\u0940 \u0926\u0939\u093e \u0935\u093e\u091c\u0924\u093e \u0906\u0939\u0947. \u0915\u0943\u092a\u092f\u093e \u092f\u093e\u0938 \u0909\u092a\u0938\u094d\u0925\u093f\u0924 \u0930\u0939\u093e.",
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.0,
+        "similarity": 100.0,
+        "accuracy": 100.0
+      },
+      "proficiency": {
+        "score": 100.0,
+        "level": "EXCELLENT",
+        "emoji": "\ud83d\udfe2",
+        "breakdown": {
+          "accuracy_contribution": 50.0,
+          "similarity_contribution": 30.0,
+          "wer_contribution": 20.0
+        }
+      },
+      "grade": "A+",
+      "timestamp": "2026-02-25T09:41:06.284013"
+    },
+    {
+      "test_name": "mixed_language",
+      "test_description": "Mixed English-Hindi code-switching",
+      "language": "en",
+      "difficulty": "hard",
+      "reference": "Hello \u0928\u092e\u0938\u094d\u0924\u0947, I want to build \u090f\u0915 application that works in multiple languages.",
+      "hypothesis": "Hello \u0928\u092e\u0938\u094d\u0924\u0947, I want to build \u090f\u0915 application that works in multiple languages.",
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.0,
+        "similarity": 100.0,
+        "accuracy": 100.0
+      },
+      "proficiency": {
+        "score": 100.0,
+        "level": "EXCELLENT",
+        "emoji": "\ud83d\udfe2",
+        "breakdown": {
+          "accuracy_contribution": 50.0,
+          "similarity_contribution": 30.0,
+          "wer_contribution": 20.0
+        }
+      },
+      "grade": "A+",
+      "timestamp": "2026-02-25T09:41:06.285008"
+    },
+    {
+      "test_name": "with_acronyms",
+      "test_description": "Text with acronyms",
+      "language": "en",
+      "difficulty": "hard",
+      "reference": "The API, URL, and JSON format are important for REST APIs. Our company uses CI/CD.",
+      "hypothesis": "The API, URL, and JSON format are important for REST APIs. Our company uses CI/CD.",
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.0,
+        "similarity": 100.0,
+        "accuracy": 100.0
+      },
+      "proficiency": {
+        "score": 100.0,
+        "level": "EXCELLENT",
+        "emoji": "\ud83d\udfe2",
+        "breakdown": {
+          "accuracy_contribution": 50.0,
+          "similarity_contribution": 30.0,
+          "wer_contribution": 20.0
+        }
+      },
+      "grade": "A+",
+      "timestamp": "2026-02-25T09:41:06.286001"
+    },
+    {
+      "test_name": "with_punctuation",
+      "test_description": "Text with punctuation and special markers",
+      "language": "en",
+      "difficulty": "medium",
+      "reference": "Wait... I said, 'Hello!' How much will it cost? Maybe 50%?",
+      "hypothesis": "Wait... I said, 'Hello!' How much will it cost? Maybe 50%?",
+      "metrics": {
+        "wer": 0.0,
+        "cer": 0.0,
+        "similarity": 100.0,
+        "accuracy": 100.0
+      },
+      "proficiency": {
+        "score": 100.0,
+        "level": "EXCELLENT",
+        "emoji": "\ud83d\udfe2",
+        "breakdown": {
+          "accuracy_contribution": 50.0,
+          "similarity_contribution": 30.0,
+          "wer_contribution": 20.0
+        }
+      },
+      "grade": "A+",
+      "timestamp": "2026-02-25T09:41:06.286962"
+    }
+  ]
+}

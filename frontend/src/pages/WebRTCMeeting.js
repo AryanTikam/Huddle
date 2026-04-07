@@ -315,7 +315,7 @@ const WebRTCMeeting = ({ roomId, onLeave, isHost = false, meetingData = null }) 
     // Handle Chrome extension environment where process.env may not be available
     const isExtension = !!(typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id);
     const SOCKET_URL = isExtension 
-      ? 'https://huddle-bugz.onrender.com'
+      ? 'http://localhost:5000'
       : (process.env.REACT_APP_SOCKET_URL || API_BASE.replace('/api', ''));
     console.log('[SOCKET] Connecting to:', SOCKET_URL);
     

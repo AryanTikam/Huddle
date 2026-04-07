@@ -4,7 +4,7 @@ from datetime import datetime
 import uuid
 import base64
 import os
-from utils.stt_service import stt_service
+from utils.stt_service import stt_service, WhisperModelLoadError
 
 recording_bp = Blueprint('recording', __name__)
 
@@ -138,6 +138,14 @@ def transcribe_audio():
             )
 
         return jsonify({'text': text, 'status': 'success', 'method': 'whisper'})
+
+    except WhisperModelLoadError as e:
+        print(f'[STT] Model load error: {str(e)}')
+        return jsonify({
+            'error': str(e),
+            'status': 'error',
+            'code': 'MODEL_LOAD_ERROR'
+        }), 503
 
     except Exception as e:
         print(f'[STT] Transcription error: {str(e)}')

@@ -20,6 +20,38 @@ chrome.runtime.onInstalled.addListener((details) => {
 
 // Handle messages from the side panel
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'ZOOM_SPEAKER_CHANGED') {
+    chrome.storage.local.set({
+      zoomActiveSpeaker: message.speaker || '',
+      zoomActiveSpeakerUpdatedAt: Date.now(),
+      zoomActiveSpeakerSource: message.source || 'zoom-dom',
+      zoomActiveSpeakerUrl: message.url || '',
+      zoomActiveSpeakerTitle: message.title || ''
+    }, () => {
+      sendResponse({ success: true });
+    });
+    return true;
+  }
+
+  if (message.type === 'GET_ZOOM_ACTIVE_SPEAKER') {
+    chrome.storage.local.get([
+      'zoomActiveSpeaker',
+      'zoomActiveSpeakerUpdatedAt',
+      'zoomActiveSpeakerSource',
+      'zoomActiveSpeakerUrl',
+      'zoomActiveSpeakerTitle'
+    ], (items) => {
+      sendResponse({
+        speaker: items.zoomActiveSpeaker || '',
+        updatedAt: items.zoomActiveSpeakerUpdatedAt || 0,
+        source: items.zoomActiveSpeakerSource || '',
+        url: items.zoomActiveSpeakerUrl || '',
+        title: items.zoomActiveSpeakerTitle || ''
+      });
+    });
+    return true;
+  }
+
   if (message.type === 'GET_CURRENT_TAB') {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       sendResponse({ tab: tabs[0] || null });

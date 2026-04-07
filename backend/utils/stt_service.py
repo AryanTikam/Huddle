@@ -43,6 +43,10 @@ except ImportError:
     WHISPER_AVAILABLE = False
 
 
+class WhisperModelLoadError(RuntimeError):
+    """Raised when Whisper cannot load its model checkpoint."""
+
+
 class STTService:
     def __init__(self):
         self._model = None
@@ -61,9 +65,45 @@ class STTService:
         """Lazy-load the Whisper model on first use."""
         if self._model is None and WHISPER_AVAILABLE:
             print(f"[STT] Loading Whisper model '{self._model_name}'...")
-            self._model = whisper.load_model(self._model_name, device=self._device)
-            print(f"[STT] Whisper model loaded on {self._device}")
+            try:
+                self._model = whisper.load_model(self._model_name, device=self._device)
+                print(f"[STT] Whisper model loaded on {self._device}")
+            except RuntimeError as exc:
+                error_message = str(exc)
+                if "SHA256 checksum does not not match" in error_message or "SHA256 checksum does not match" in error_message:
+                    self._remove_cached_model()
+                    print("[STT] Detected corrupted Whisper cache. Cleared the downloaded model and retrying...")
+                    try:
+                        self._model = whisper.load_model(self._model_name, device=self._device)
+                        print(f"[STT] Whisper model reloaded on {self._device}")
+                    except RuntimeError as retry_exc:
+                        raise WhisperModelLoadError(
+                            f"Whisper model '{self._model_name}' could not be downloaded cleanly after clearing the cache: {retry_exc}"
+                        ) from retry_exc
+                else:
+                    raise WhisperModelLoadError(
+                        f"Failed to load Whisper model '{self._model_name}': {error_message}"
+                    ) from exc
         return self._model
+
+    def _remove_cached_model(self):
+        """Remove the cached Whisper checkpoint so it can be downloaded again."""
+        model_url = getattr(whisper, "_MODELS", {}).get(self._model_name)
+        if not model_url:
+            return
+
+        cache_root = os.path.join(
+            os.getenv("XDG_CACHE_HOME", os.path.join(os.path.expanduser("~"), ".cache")),
+            "whisper",
+        )
+        checkpoint_path = os.path.join(cache_root, os.path.basename(model_url))
+
+        if os.path.isfile(checkpoint_path):
+            try:
+                os.remove(checkpoint_path)
+                print(f"[STT] Removed cached Whisper checkpoint: {checkpoint_path}")
+            except OSError as exc:
+                print(f"[STT] Could not remove cached Whisper checkpoint {checkpoint_path}: {exc}")
 
     def transcribe(self, audio_bytes: bytes, language: str = 'en') -> str:
         """

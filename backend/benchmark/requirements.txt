@@ -1,0 +1,3 @@
+# Benchmark dependencies
+# These are additional packages needed for benchmarking
+# Base packages are in ../requirements.txt

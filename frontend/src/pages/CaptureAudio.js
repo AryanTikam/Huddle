@@ -49,6 +49,7 @@ const CaptureAudio = ({ onMeetingCreated, onNavigate }) => {
   const transcriptionTimerRef = useRef(null);
   const isTranscribingRef = useRef(false);
   const activeStreamRef = useRef(null);
+  const currentSpeakerRef = useRef('Speaker');
   
   const { makeAuthenticatedRequest } = useAuth();
 
@@ -131,6 +132,83 @@ const CaptureAudio = ({ onMeetingCreated, onNavigate }) => {
       ? `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
       : `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  const normalizeSpeakerName = (speaker) => {
+    const value = typeof speaker === 'string' ? speaker.trim() : '';
+    return value || 'Speaker';
+  };
+
+  const syncCurrentSpeaker = useCallback((speaker) => {
+    const nextSpeaker = normalizeSpeakerName(speaker);
+    currentSpeakerRef.current = nextSpeaker;
+    setCurrentSpeaker(nextSpeaker);
+  }, []);
+
+  const getSpeakerFromExtension = useCallback(async () => {
+    if (!isExtension || !chrome?.runtime?.sendMessage) {
+      return '';
+    }
+
+    return new Promise((resolve) => {
+      try {
+        chrome.runtime.sendMessage({ type: 'GET_ZOOM_ACTIVE_SPEAKER' }, (response) => {
+          if (chrome.runtime.lastError) {
+            resolve('');
+            return;
+          }
+
+          resolve(normalizeSpeakerName(response?.speaker));
+        });
+      } catch (error) {
+        resolve('');
+      }
+    });
+  }, [isExtension]);
+
+  useEffect(() => {
+    currentSpeakerRef.current = normalizeSpeakerName(currentSpeaker);
+  }, [currentSpeaker]);
+
+  useEffect(() => {
+    if (!isExtension || !chrome?.runtime?.onMessage) {
+      return undefined;
+    }
+
+    const handleZoomSpeakerMessage = (message) => {
+      if (message?.type === 'ZOOM_SPEAKER_CHANGED' && message.speaker) {
+        syncCurrentSpeaker(message.speaker);
+      }
+    };
+
+    chrome.runtime.onMessage.addListener(handleZoomSpeakerMessage);
+
+    return () => {
+      chrome.runtime.onMessage.removeListener(handleZoomSpeakerMessage);
+    };
+  }, [isExtension, syncCurrentSpeaker]);
+
+  useEffect(() => {
+    if (!isExtension || !chrome?.storage?.onChanged) {
+      return undefined;
+    }
+
+    const handleStorageChange = (changes, areaName) => {
+      if (areaName !== 'local') {
+        return;
+      }
+
+      const nextSpeaker = changes.zoomActiveSpeaker?.newValue;
+      if (nextSpeaker) {
+        syncCurrentSpeaker(nextSpeaker);
+      }
+    };
+
+    chrome.storage.onChanged.addListener(handleStorageChange);
+
+    return () => {
+      chrome.storage.onChanged.removeListener(handleStorageChange);
+    };
+  }, [isExtension, syncCurrentSpeaker]);
 
   const fetchFolders = async () => {
     try {
@@ -300,6 +378,7 @@ const CaptureAudio = ({ onMeetingCreated, onNavigate }) => {
 
     console.log('[TRANSCRIPTION] Sending', (blob.size / 1024).toFixed(1), 'KB audio to server...');
     isTranscribingRef.current = true;
+  const speakerName = normalizeSpeakerName(currentSpeakerRef.current);
     try {
       // Convert blob to base64
       const base64data = await new Promise((resolve, reject) => {
@@ -315,7 +394,7 @@ const CaptureAudio = ({ onMeetingCreated, onNavigate }) => {
           audio_data: base64data,
           language: selectedLanguage,
           meeting_id: meetingIdRef.current,
-          speaker: currentSpeaker
+          speaker: speakerName
         })
       });
 
@@ -325,7 +404,7 @@ const CaptureAudio = ({ onMeetingCreated, onNavigate }) => {
         if (data.text && data.text.trim()) {
           const entry = {
             id: Date.now(),
-            speaker: currentSpeaker,
+            speaker: speakerName,
             text: data.text.trim(),
             timestamp: new Date().toLocaleTimeString(),
             confidence: 0.85
@@ -494,6 +573,13 @@ const CaptureAudio = ({ onMeetingCreated, onNavigate }) => {
       // Start server-side transcription (separate recorder, 10s cycles)
       setIsCapturing(true);
       isCapturingRef.current = true;
+      syncCurrentSpeaker('Speaker');
+
+      const zoomSpeaker = await getSpeakerFromExtension();
+      if (zoomSpeaker) {
+        syncCurrentSpeaker(zoomSpeaker);
+      }
+
       startServerTranscription();
 
       setIsPaused(false);
@@ -554,6 +640,12 @@ const CaptureAudio = ({ onMeetingCreated, onNavigate }) => {
 
       // Save transcript and finalize meeting
       if (meetingId) {
+        const speakerCounts = liveTranscript.reduce((accumulator, entry) => {
+          const speakerName = normalizeSpeakerName(entry.speaker);
+          accumulator[speakerName] = (accumulator[speakerName] || 0) + 1;
+          return accumulator;
+        }, {});
+
         const fullTranscript = liveTranscript
           .map(entry => `${entry.speaker} (${entry.timestamp}): ${entry.text}`)
           .join('\n\n');
@@ -563,7 +655,7 @@ const CaptureAudio = ({ onMeetingCreated, onNavigate }) => {
           method: 'POST',
           body: JSON.stringify({
             transcript: fullTranscript,
-            speakers: { [currentSpeaker]: liveTranscript.length },
+            speakers: speakerCounts,
             language: selectedLanguage,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
@@ -661,6 +753,11 @@ const CaptureAudio = ({ onMeetingCreated, onNavigate }) => {
               <li><strong>Important:</strong> Check the <strong>"Share audio"</strong> checkbox at the bottom of the dialog</li>
               <li>Audio will be captured and transcribed in real-time</li>
             </ol>
+            {isExtension && (
+              <p className="text-xs text-blue-500 dark:text-blue-300 mt-3">
+                If you are in Zoom on the web, Huddle can pick up live speaker labels from the extension and attach them to each transcript line.
+              </p>
+            )}
           </div>
 
           {/* Meeting Setup Form */}
@@ -855,6 +952,9 @@ const CaptureAudio = ({ onMeetingCreated, onNavigate }) => {
                 <Clock className="w-6 h-6" />
                 <span>{formatTime(recordingTime)}</span>
               </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Current speaker: <span className="font-medium text-gray-700 dark:text-gray-200">{currentSpeaker}</span>
+              </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Source: {captureSource === 'system' ? 'System Audio' : captureSource === 'mic+system' ? 'System + Mic' : 'Browser Tab'}
               </p>

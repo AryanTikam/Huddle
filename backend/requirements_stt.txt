@@ -6,3 +6,4 @@ deep-translator
 langdetect
 indic-nlp-library
 aksharamukha
+imageio_ffmpeg

@@ -23,15 +23,15 @@ export const AuthProvider = ({ children }) => {
   const API_BASE = (() => {
     try {
       if (isExtension) {
-        // In extension mode, always use the production API
-        return 'https://huddle-bugz.onrender.com/api';
+        // In extension mode, always use local backend.
+        return 'http://localhost:5000/api';
       }
       if (process.env.NODE_ENV === 'development') {
         return 'http://localhost:5000/api';
       }
-      return process.env.REACT_APP_API_URL || 'https://huddle-bugz.onrender.com/api';
+      return process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
     } catch {
-      return 'https://huddle-bugz.onrender.com/api';
+      return 'http://localhost:5000/api';
     }
   })();
 
