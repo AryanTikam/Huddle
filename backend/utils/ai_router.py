@@ -16,12 +16,35 @@ from functools import wraps
 # Import both providers
 import utils.ai as gemini_provider
 import utils.local_llm as local_provider
+from utils.rag_qdrant import retrieve_rag_context
 
 # Default mode from env, fallback to off-device
 DEFAULT_MODE = os.getenv("AI_MODE", "off-device")
 
 # In-memory cache of user mode preferences (refreshed from DB on request)
 _user_mode_cache = {}
+
+
+def _merge_with_rag_context(base_text, rag_context):
+    """Attach optional domain context to a prompt source document."""
+    if not rag_context:
+        return base_text
+
+    return (
+        "Domain Knowledge Context (supplemental):\n"
+        f"{rag_context}\n\n"
+        "Meeting Content:\n"
+        f"{base_text}"
+    )
+
+
+def _get_rag_context(query_seed, user_id=None, db=None):
+    """Retrieve per-user domain context using blind vector search."""
+    if not query_seed:
+        return ""
+
+    mode = get_user_mode(user_id, db)
+    return retrieve_rag_context(query_seed, user_id=user_id, db=db, mode=mode)
 
 
 def get_user_mode(user_id=None, db=None):
@@ -149,55 +172,60 @@ def generate_summary(transcript, user_id=None, db=None):
     """Route summary generation to appropriate provider"""
     mode = get_user_mode(user_id, db)
     print(f"[AI_ROUTER] generate_summary | mode={mode}")
+    rag_context = _get_rag_context(transcript[:1200], user_id=user_id, db=db)
+    enriched_transcript = _merge_with_rag_context(transcript, rag_context)
     
     if mode == "local":
         model = get_user_local_model(user_id, db)
-        return local_provider.generate_summary(transcript, model=model)
+        return local_provider.generate_summary(enriched_transcript, model=model, rag_context=rag_context)
     elif mode == "hybrid":
         # WIP: Route based on complexity
-        if _should_use_local(transcript):
+        if _should_use_local(enriched_transcript):
             model = get_user_local_model(user_id, db)
             print("[AI_ROUTER] Hybrid -> routing to LOCAL")
-            return local_provider.generate_summary(transcript, model=model)
+            return local_provider.generate_summary(enriched_transcript, model=model, rag_context=rag_context)
         else:
             print("[AI_ROUTER] Hybrid -> routing to OFF-DEVICE (Gemini)")
-            return gemini_provider.generate_summary(transcript)
+            return gemini_provider.generate_summary(enriched_transcript, rag_context=rag_context)
     else:  # off-device
-        return gemini_provider.generate_summary(transcript)
+        return gemini_provider.generate_summary(enriched_transcript, rag_context=rag_context)
 
 
 def generate_simple_chat_response(question, transcript, user_id=None, db=None):
     """Route chat response to appropriate provider"""
     mode = get_user_mode(user_id, db)
     print(f"[AI_ROUTER] generate_simple_chat_response | mode={mode}")
+    rag_context = _get_rag_context(question, user_id=user_id, db=db)
+    enriched_transcript = _merge_with_rag_context(transcript, rag_context)
     
     if mode == "local":
         model = get_user_local_model(user_id, db)
-        return local_provider.generate_simple_chat_response(question, transcript, model=model)
+        return local_provider.generate_simple_chat_response(question, enriched_transcript, model=model, rag_context=rag_context)
     elif mode == "hybrid":
-        if _should_use_local(question + transcript):
+        if _should_use_local(question + enriched_transcript):
             model = get_user_local_model(user_id, db)
-            return local_provider.generate_simple_chat_response(question, transcript, model=model)
+            return local_provider.generate_simple_chat_response(question, enriched_transcript, model=model, rag_context=rag_context)
         else:
-            return gemini_provider.generate_simple_chat_response(question, transcript)
+            return gemini_provider.generate_simple_chat_response(question, enriched_transcript, rag_context=rag_context)
     else:
-        return gemini_provider.generate_simple_chat_response(question, transcript)
+        return gemini_provider.generate_simple_chat_response(question, enriched_transcript, rag_context=rag_context)
 
 
 def chatbot_answer(meeting_id, question, user_id=None, db=None):
     """Route chatbot answer to appropriate provider"""
     mode = get_user_mode(user_id, db)
     print(f"[AI_ROUTER] chatbot_answer | mode={mode}")
+    rag_context = _get_rag_context(question, user_id=user_id, db=db)
     
     if mode == "local":
-        return local_provider.chatbot_answer(meeting_id, question)
+        return local_provider.chatbot_answer(meeting_id, question, rag_context=rag_context)
     elif mode == "hybrid":
         if _should_use_local(question):
-            return local_provider.chatbot_answer(meeting_id, question)
+            return local_provider.chatbot_answer(meeting_id, question, rag_context=rag_context)
         else:
-            return gemini_provider.chatbot_answer(meeting_id, question)
+            return gemini_provider.chatbot_answer(meeting_id, question, rag_context=rag_context)
     else:
-        return gemini_provider.chatbot_answer(meeting_id, question)
+        return gemini_provider.chatbot_answer(meeting_id, question, rag_context=rag_context)
 
 
 def create_vector_store(meeting_id, transcript, user_id=None, db=None):
@@ -225,70 +253,78 @@ def generate_knowledge_graph(transcript, user_id=None, db=None):
     """Route knowledge graph generation to appropriate provider"""
     mode = get_user_mode(user_id, db)
     print(f"[AI_ROUTER] generate_knowledge_graph | mode={mode}")
+    rag_context = _get_rag_context(transcript[:1200], user_id=user_id, db=db)
+    enriched_transcript = _merge_with_rag_context(transcript, rag_context)
     
     if mode == "local":
         model = get_user_local_model(user_id, db)
-        return local_provider.generate_knowledge_graph(transcript, model=model)
+        return local_provider.generate_knowledge_graph(enriched_transcript, model=model, rag_context=rag_context)
     elif mode == "hybrid":
-        if _should_use_local(transcript):
+        if _should_use_local(enriched_transcript):
             model = get_user_local_model(user_id, db)
-            return local_provider.generate_knowledge_graph(transcript, model=model)
+            return local_provider.generate_knowledge_graph(enriched_transcript, model=model, rag_context=rag_context)
         else:
-            return gemini_provider.generate_knowledge_graph(transcript)
+            return gemini_provider.generate_knowledge_graph(enriched_transcript, rag_context=rag_context)
     else:
-        return gemini_provider.generate_knowledge_graph(transcript)
+        return gemini_provider.generate_knowledge_graph(enriched_transcript, rag_context=rag_context)
 
 
 def translate_transcript(transcript, target_language, user_id=None, db=None):
     """Route translation to appropriate provider"""
     mode = get_user_mode(user_id, db)
     print(f"[AI_ROUTER] translate_transcript | mode={mode}")
+    rag_context = _get_rag_context(transcript[:1200], user_id=user_id, db=db)
+    enriched_transcript = _merge_with_rag_context(transcript, rag_context)
     
     if mode == "local":
         model = get_user_local_model(user_id, db)
-        return local_provider.translate_transcript(transcript, target_language, model=model)
+        return local_provider.translate_transcript(enriched_transcript, target_language, model=model, rag_context=rag_context)
     elif mode == "hybrid":
         # Translation is complex, prefer off-device in hybrid mode
         print("[AI_ROUTER] Hybrid -> routing translation to OFF-DEVICE")
-        return gemini_provider.translate_transcript(transcript, target_language)
+        return gemini_provider.translate_transcript(enriched_transcript, target_language, rag_context=rag_context)
     else:
-        return gemini_provider.translate_transcript(transcript, target_language)
+        return gemini_provider.translate_transcript(enriched_transcript, target_language, rag_context=rag_context)
 
 
 def generate_meeting_insights(transcript, user_id=None, db=None):
     """Route insights generation to appropriate provider"""
     mode = get_user_mode(user_id, db)
     print(f"[AI_ROUTER] generate_meeting_insights | mode={mode}")
+    rag_context = _get_rag_context(transcript[:1200], user_id=user_id, db=db)
+    enriched_transcript = _merge_with_rag_context(transcript, rag_context)
     
     if mode == "local":
         model = get_user_local_model(user_id, db)
-        return local_provider.generate_meeting_insights(transcript, model=model)
+        return local_provider.generate_meeting_insights(enriched_transcript, model=model, rag_context=rag_context)
     elif mode == "hybrid":
-        if _should_use_local(transcript):
+        if _should_use_local(enriched_transcript):
             model = get_user_local_model(user_id, db)
-            return local_provider.generate_meeting_insights(transcript, model=model)
+            return local_provider.generate_meeting_insights(enriched_transcript, model=model, rag_context=rag_context)
         else:
-            return gemini_provider.generate_meeting_insights(transcript)
+            return gemini_provider.generate_meeting_insights(enriched_transcript, rag_context=rag_context)
     else:
-        return gemini_provider.generate_meeting_insights(transcript)
+        return gemini_provider.generate_meeting_insights(enriched_transcript, rag_context=rag_context)
 
 
 def generate_minutes_of_meeting(transcript, user_id=None, db=None):
     """Route minutes generation to appropriate provider"""
     mode = get_user_mode(user_id, db)
     print(f"[AI_ROUTER] generate_minutes_of_meeting | mode={mode}")
+    rag_context = _get_rag_context(transcript[:1200], user_id=user_id, db=db)
+    enriched_transcript = _merge_with_rag_context(transcript, rag_context)
     
     if mode == "local":
         model = get_user_local_model(user_id, db)
-        return local_provider.generate_minutes_of_meeting(transcript, model=model)
+        return local_provider.generate_minutes_of_meeting(enriched_transcript, model=model, rag_context=rag_context)
     elif mode == "hybrid":
-        if _should_use_local(transcript):
+        if _should_use_local(enriched_transcript):
             model = get_user_local_model(user_id, db)
-            return local_provider.generate_minutes_of_meeting(transcript, model=model)
+            return local_provider.generate_minutes_of_meeting(enriched_transcript, model=model, rag_context=rag_context)
         else:
-            return gemini_provider.generate_minutes_of_meeting(transcript)
+            return gemini_provider.generate_minutes_of_meeting(enriched_transcript, rag_context=rag_context)
     else:
-        return gemini_provider.generate_minutes_of_meeting(transcript)
+        return gemini_provider.generate_minutes_of_meeting(enriched_transcript, rag_context=rag_context)
 
 
 # ─── Provider Info ──────────────────────────────────────────────────

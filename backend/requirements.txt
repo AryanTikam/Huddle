@@ -14,3 +14,4 @@ werkzeug
 reportlab
 pymongo[srv]==3.12
 requests
+qdrant-client

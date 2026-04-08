@@ -48,6 +48,17 @@ MAX_CONTEXT_SIZE = 30000  # Gemini's context limit
 CHUNK_SIZE = 4096
 CHUNK_OVERLAP = 512
 
+
+def _format_domain_context_block(rag_context):
+    """Return a prompt-safe supplemental domain context block."""
+    if not rag_context:
+        return ""
+
+    return (
+        "\nSupplemental Domain Knowledge (from user-attached RAG):\n"
+        f"{rag_context}\n"
+    )
+
 def should_chunk_transcript(text):
     """Determine if transcript needs chunking based on size"""
     return len(text) > MAX_CONTEXT_SIZE
@@ -97,12 +108,15 @@ def load_vector_store(meeting_id: str):
         print(f"[AI] Could not load vector store for meeting {meeting_id}: {e}")
         return None
 
-def generate_simple_chat_response(question, transcript):
+def generate_simple_chat_response(question, transcript, rag_context=None):
     """Generate a simple chat response using Gemini for smaller transcripts"""
     try:
         model = genai.GenerativeModel("gemini-2.5-flash")
+        domain_context = _format_domain_context_block(rag_context)
         
         prompt = f"""You are an AI assistant helping users understand their meeting content. 
+
+{domain_context}
 
 Meeting Transcript:
 {transcript}
@@ -115,6 +129,7 @@ Instructions:
 - If the answer isn't in the transcript, say so clearly
 - Keep responses concise but informative
 - Use a friendly, professional tone
+- Treat supplemental domain knowledge as additional context, but do not invent meeting facts.
 
 Answer:"""
         
@@ -125,14 +140,17 @@ Answer:"""
         print(f"[AI] Simple chat response error: {str(e)}")
         return "I'm having trouble processing your question right now. Please try again."
 
-def generate_summary(transcript):
+def generate_summary(transcript, rag_context=None):
     """Generate meeting summary in structured JSON format"""
-    if not should_chunk_transcript(transcript):
+    domain_context = _format_domain_context_block(rag_context)
+    enriched_transcript = f"{domain_context}\nTranscript:\n{transcript}" if domain_context else transcript
+
+    if not should_chunk_transcript(enriched_transcript):
         model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content(
             f"""Analyze this meeting transcript and provide a comprehensive summary in valid JSON format.
 
-Transcript: {transcript}
+Transcript: {enriched_transcript}
 
 Return ONLY valid JSON (no markdown, no code blocks) with this exact structure:
 {{
@@ -164,7 +182,7 @@ Return ONLY valid JSON (no markdown, no code blocks) with this exact structure:
         return response.text
     
     # Handle large transcripts with chunking
-    chunks = chunk_transcript(transcript)
+    chunks = chunk_transcript(enriched_transcript)
     summaries = []
     
     for i, chunk in enumerate(chunks):
@@ -189,10 +207,11 @@ Return ONLY valid JSON (no markdown, no code blocks) with this exact structure:
     )
     return final_summary.text
 
-def chatbot_answer(meeting_id: str, question: str):
+def chatbot_answer(meeting_id: str, question: str, rag_context=None):
     """Answer questions using vector similarity search for large transcripts"""
     try:
         vector_store = load_vector_store(meeting_id)
+        domain_context = _format_domain_context_block(rag_context)
         
         if not vector_store:
             return "Vector store not found. Please process the meeting first."
@@ -206,6 +225,8 @@ def chatbot_answer(meeting_id: str, question: str):
 
 Context from meeting:
 {context}
+
+{domain_context}
 
 Question: {question}
 
@@ -240,12 +261,15 @@ def identify_speakers(transcript_segments):
         
     return speakers
 
-def generate_knowledge_graph(transcript):
+def generate_knowledge_graph(transcript, rag_context=None):
     """Generate knowledge graph from meeting transcript"""
+    domain_context = _format_domain_context_block(rag_context)
+    enriched_transcript = f"{domain_context}\nTranscript:\n{transcript}" if domain_context else transcript
+
     # Only chunk if necessary for knowledge graph extraction
-    if should_chunk_transcript(transcript):
+    if should_chunk_transcript(enriched_transcript):
         # For large transcripts, extract entities from chunks then combine
-        chunks = chunk_transcript(transcript)
+        chunks = chunk_transcript(enriched_transcript)
         all_entities = []
         all_relationships = []
         
@@ -264,11 +288,11 @@ def generate_knowledge_graph(transcript):
             "nodes": unique_entities,
             "edges": unique_relationships,
             "topics": _extract_topics_from_entities(unique_entities),
-            "action_items": _extract_action_items(transcript)
+            "action_items": _extract_action_items(enriched_transcript)
         }
     else:
         # Process as single document
-        return _extract_entities_from_chunk(transcript)
+        return _extract_entities_from_chunk(enriched_transcript)
 
 def _extract_entities_from_chunk(text):
     """Extract entities from a single chunk"""
@@ -445,10 +469,13 @@ def _extract_action_items(transcript):
     
     return action_items[:5]  # Return max 5 action items
 
-def translate_transcript(transcript, target_language):
+def translate_transcript(transcript, target_language, rag_context=None):
     """Translate transcript to target language"""
-    if should_chunk_transcript(transcript):
-        chunks = chunk_transcript(transcript)
+    domain_context = _format_domain_context_block(rag_context)
+    enriched_transcript = f"{domain_context}\nTranscript:\n{transcript}" if domain_context else transcript
+
+    if should_chunk_transcript(enriched_transcript):
+        chunks = chunk_transcript(enriched_transcript)
         translated_chunks = []
         
         for chunk in chunks:
@@ -462,19 +489,21 @@ def translate_transcript(transcript, target_language):
     else:
         model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content(
-            f"Translate this meeting transcript to {target_language}:\n\n{transcript}"
+            f"Translate this meeting transcript to {target_language}:\n\n{enriched_transcript}"
         )
         return response.text
 
-def generate_meeting_insights(transcript):
+def generate_meeting_insights(transcript, rag_context=None):
     """Generate comprehensive meeting insights in structured JSON format"""
+    domain_context = _format_domain_context_block(rag_context)
+    enriched_transcript = f"{domain_context}\nTranscript:\n{transcript}" if domain_context else transcript
     
-    if not should_chunk_transcript(transcript):
+    if not should_chunk_transcript(enriched_transcript):
         model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content(
             f"""Analyze this meeting transcript and provide actionable insights in valid JSON format.
 
-Transcript: {transcript}
+Transcript: {enriched_transcript}
 
 Return ONLY valid JSON (no markdown, no code blocks) with this exact structure:
 {{
@@ -526,7 +555,7 @@ Return ONLY valid JSON (no markdown, no code blocks) with this exact structure:
         return response.text
 
     # Handle large transcripts
-    chunks = chunk_transcript(transcript)
+    chunks = chunk_transcript(enriched_transcript)
     insights_list = []
 
     for i, chunk in enumerate(chunks):
@@ -548,14 +577,16 @@ Return ONLY valid JSON (no markdown, no code blocks) with this exact structure:
     )
     return final_insights.text
 
-def generate_minutes_of_meeting(transcript):
+def generate_minutes_of_meeting(transcript, rag_context=None):
     """Generate Minutes of Meeting in structured JSON format"""
-    if not should_chunk_transcript(transcript):
+    domain_context = _format_domain_context_block(rag_context)
+    enriched_transcript = f"{domain_context}\nTranscript:\n{transcript}" if domain_context else transcript
+    if not should_chunk_transcript(enriched_transcript):
         model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content(
             f"""Analyze the meeting transcript and generate Minutes of Meeting in valid JSON format.
 
-Transcript: {transcript}
+Transcript: {enriched_transcript}
 
 Return ONLY valid JSON (no markdown, no code blocks) with this exact structure:
 {{
@@ -611,7 +642,7 @@ Return ONLY valid JSON (no markdown, no code blocks) with this exact structure:
         return response.text
 
     # Handle large transcripts
-    chunks = chunk_transcript(transcript)
+    chunks = chunk_transcript(enriched_transcript)
     chunk_minutes = []
 
     for i, chunk in enumerate(chunks):

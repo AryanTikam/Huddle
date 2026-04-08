@@ -13,6 +13,12 @@ from utils.local_llm import (
     delete_model,
     get_model_info
 )
+from utils.rag_qdrant import (
+    get_user_rag_config,
+    set_user_rag_config,
+    clear_user_rag_config,
+    verify_qdrant_connection,
+)
 import json
 
 settings_bp = Blueprint('settings', __name__)
@@ -333,3 +339,87 @@ def model_info(model_name):
         return jsonify(info)
     else:
         return jsonify({"error": f"Model '{model_name}' not found"}), 404
+
+
+# ─── Domain RAG (Qdrant) Configuration ───────────────────────────
+
+@settings_bp.route('/rag', methods=['GET'])
+@jwt_required()
+def get_rag_settings():
+    """Get current RAG attachment config for the authenticated user."""
+    user_id = get_jwt_identity()
+    db = current_app.mongo.db
+
+    config = get_user_rag_config(user_id, db, include_secrets=False)
+    if not config:
+        return jsonify({
+            "enabled": False,
+            "qdrant_url": "",
+            "collection_name": "",
+            "top_k": 4,
+        })
+
+    return jsonify(config)
+
+
+@settings_bp.route('/rag', methods=['POST'])
+@jwt_required()
+def set_rag_settings():
+    """Attach or update Qdrant RAG config for the authenticated user."""
+    user_id = get_jwt_identity()
+    db = current_app.mongo.db
+    data = request.get_json() or {}
+
+    try:
+        config = {
+            "enabled": bool(data.get('enabled', True)),
+            "qdrant_url": (data.get('qdrant_url') or '').strip(),
+            "collection_name": (data.get('collection_name') or '').strip(),
+            "qdrant_api_key": (data.get('qdrant_api_key') or '').strip(),
+            "top_k": int(data.get('top_k') or 4),
+        }
+    except Exception:
+        return jsonify({"error": "Invalid payload"}), 400
+
+    if config["enabled"] and (not config["qdrant_url"] or not config["collection_name"]):
+        return jsonify({"error": "qdrant_url and collection_name are required"}), 400
+
+    verify_before_save = bool(data.get('verify_connection', True))
+    if config["enabled"] and verify_before_save:
+        try:
+            verify_info = verify_qdrant_connection(config)
+        except Exception as e:
+            return jsonify({
+                "error": "Failed to connect to Qdrant with provided settings",
+                "details": str(e),
+            }), 400
+    else:
+        verify_info = {"connected": False}
+
+    set_user_rag_config(user_id, db, config)
+
+    response = {
+        "enabled": config["enabled"],
+        "qdrant_url": config["qdrant_url"],
+        "collection_name": config["collection_name"],
+        "top_k": max(1, min(config["top_k"], 10)),
+        "verified": verify_info.get("connected", False),
+    }
+    if "points_count" in verify_info:
+        response["points_count"] = verify_info["points_count"]
+
+    return jsonify(response)
+
+
+@settings_bp.route('/rag', methods=['DELETE'])
+@jwt_required()
+def delete_rag_settings():
+    """Detach user RAG configuration and disable RAG retrieval."""
+    user_id = get_jwt_identity()
+    db = current_app.mongo.db
+    clear_user_rag_config(user_id, db)
+
+    return jsonify({
+        "enabled": False,
+        "detached": True,
+    })

@@ -23,6 +23,17 @@ CHUNK_SIZE = 4096
 CHUNK_OVERLAP = 512
 
 
+def _format_domain_context_block(rag_context):
+    """Return a prompt-safe supplemental domain context block."""
+    if not rag_context:
+        return ""
+
+    return (
+        "\nSupplemental Domain Knowledge (from user-attached RAG):\n"
+        f"{rag_context}\n"
+    )
+
+
 def is_ollama_available():
     """Check if Ollama is running and accessible"""
     try:
@@ -236,9 +247,12 @@ def load_vector_store(meeting_id: str):
         return None
 
 
-def generate_simple_chat_response(question, transcript, model=None):
+def generate_simple_chat_response(question, transcript, model=None, rag_context=None):
     """Generate a chat response using local LLM"""
+    domain_context = _format_domain_context_block(rag_context)
     prompt = f"""You are an AI assistant helping users understand their meeting content. 
+
+{domain_context}
 
 Meeting Transcript:
 {transcript}
@@ -251,6 +265,7 @@ Instructions:
 - If the answer isn't in the transcript, say so clearly
 - Keep responses concise but informative
 - Use a friendly, professional tone
+- Treat supplemental domain knowledge as additional context, but do not invent meeting facts.
 
 Answer:"""
     
@@ -258,12 +273,15 @@ Answer:"""
     return response if response else "I'm having trouble processing your question right now. Please try again."
 
 
-def generate_summary(transcript, model=None):
+def generate_summary(transcript, model=None, rag_context=None):
     """Generate meeting summary in structured JSON format using local LLM"""
-    if not should_chunk_transcript(transcript):
+    domain_context = _format_domain_context_block(rag_context)
+    enriched_transcript = f"{domain_context}\nTranscript:\n{transcript}" if domain_context else transcript
+
+    if not should_chunk_transcript(enriched_transcript):
         prompt = f"""Analyze this meeting transcript and provide a comprehensive summary in valid JSON format.
 
-Transcript: {transcript}
+Transcript: {enriched_transcript}
 
 Return ONLY valid JSON (no markdown, no code blocks) with this exact structure:
 {{
@@ -294,7 +312,7 @@ Return ONLY valid JSON (no markdown, no code blocks) with this exact structure:
         return _generate(prompt, model=model)
     
     # Handle large transcripts with chunking
-    chunks = chunk_transcript(transcript)
+    chunks = chunk_transcript(enriched_transcript)
     summaries = []
     
     for i, chunk in enumerate(chunks):
@@ -314,10 +332,11 @@ Return ONLY valid JSON (no markdown, no code blocks) with this exact structure:
     return _generate(final_prompt, model=model)
 
 
-def chatbot_answer(meeting_id: str, question: str, model=None):
+def chatbot_answer(meeting_id: str, question: str, model=None, rag_context=None):
     """Answer questions using vector similarity search for large transcripts"""
     try:
         vector_store = load_vector_store(meeting_id)
+        domain_context = _format_domain_context_block(rag_context)
         
         if not vector_store:
             return "Vector store not found. Please process the meeting first."
@@ -329,6 +348,8 @@ def chatbot_answer(meeting_id: str, question: str, model=None):
 
 Context from meeting:
 {context}
+
+{domain_context}
 
 Question: {question}
 
@@ -345,10 +366,13 @@ Instructions:
         return "I'm having trouble processing your question right now. Please try again."
 
 
-def generate_knowledge_graph(transcript, model=None):
+def generate_knowledge_graph(transcript, model=None, rag_context=None):
     """Generate knowledge graph from meeting transcript using local LLM"""
-    if should_chunk_transcript(transcript):
-        chunks = chunk_transcript(transcript)
+    domain_context = _format_domain_context_block(rag_context)
+    enriched_transcript = f"{domain_context}\nTranscript:\n{transcript}" if domain_context else transcript
+
+    if should_chunk_transcript(enriched_transcript):
+        chunks = chunk_transcript(enriched_transcript)
         all_entities = []
         all_relationships = []
         
@@ -366,10 +390,10 @@ def generate_knowledge_graph(transcript, model=None):
             "nodes": unique_entities,
             "edges": unique_relationships,
             "topics": _extract_topics_from_entities(unique_entities),
-            "action_items": _extract_action_items(transcript)
+            "action_items": _extract_action_items(enriched_transcript)
         }
     else:
-        return _extract_entities_from_chunk(transcript, model)
+        return _extract_entities_from_chunk(enriched_transcript, model)
 
 
 def _extract_entities_from_chunk(text, model=None):
@@ -615,26 +639,32 @@ def _extract_action_items(transcript):
     return items[:5]
 
 
-def translate_transcript(transcript, target_language, model=None):
+def translate_transcript(transcript, target_language, model=None, rag_context=None):
     """Translate transcript using local LLM"""
-    if should_chunk_transcript(transcript):
-        chunks = chunk_transcript(transcript)
+    domain_context = _format_domain_context_block(rag_context)
+    enriched_transcript = f"{domain_context}\nTranscript:\n{transcript}" if domain_context else transcript
+
+    if should_chunk_transcript(enriched_transcript):
+        chunks = chunk_transcript(enriched_transcript)
         translated = []
         for chunk in chunks:
             prompt = f"Translate this meeting transcript to {target_language}:\n\n{chunk}"
             translated.append(_generate(prompt, model=model))
         return '\n\n'.join(translated)
     else:
-        prompt = f"Translate this meeting transcript to {target_language}:\n\n{transcript}"
+        prompt = f"Translate this meeting transcript to {target_language}:\n\n{enriched_transcript}"
         return _generate(prompt, model=model)
 
 
-def generate_meeting_insights(transcript, model=None):
+def generate_meeting_insights(transcript, model=None, rag_context=None):
     """Generate meeting insights using local LLM"""
-    if not should_chunk_transcript(transcript):
+    domain_context = _format_domain_context_block(rag_context)
+    enriched_transcript = f"{domain_context}\nTranscript:\n{transcript}" if domain_context else transcript
+
+    if not should_chunk_transcript(enriched_transcript):
         prompt = f"""Analyze this meeting transcript and provide actionable insights in valid JSON format.
 
-Transcript: {transcript}
+Transcript: {enriched_transcript}
 
 Return ONLY valid JSON (no markdown, no code blocks) with this exact structure:
 {{
@@ -684,7 +714,7 @@ Return ONLY valid JSON (no markdown, no code blocks) with this exact structure:
         return _generate(prompt, model=model)
     
     # Handle large transcripts
-    chunks = chunk_transcript(transcript)
+    chunks = chunk_transcript(enriched_transcript)
     insights_list = []
     for chunk in chunks:
         prompt = f"""Analyze this chunk and extract insights in JSON format:
@@ -700,12 +730,15 @@ Return ONLY valid JSON (no markdown, no code blocks) with this exact structure:
     return _generate(final_prompt, model=model)
 
 
-def generate_minutes_of_meeting(transcript, model=None):
+def generate_minutes_of_meeting(transcript, model=None, rag_context=None):
     """Generate Minutes of Meeting using local LLM"""
-    if not should_chunk_transcript(transcript):
+    domain_context = _format_domain_context_block(rag_context)
+    enriched_transcript = f"{domain_context}\nTranscript:\n{transcript}" if domain_context else transcript
+
+    if not should_chunk_transcript(enriched_transcript):
         prompt = f"""Analyze the meeting transcript and generate Minutes of Meeting in valid JSON format.
 
-Transcript: {transcript}
+Transcript: {enriched_transcript}
 
 Return ONLY valid JSON (no markdown, no code blocks) with this exact structure:
 {{
@@ -760,7 +793,7 @@ Return ONLY valid JSON (no markdown, no code blocks) with this exact structure:
         return _generate(prompt, model=model)
     
     # Handle large transcripts
-    chunks = chunk_transcript(transcript)
+    chunks = chunk_transcript(enriched_transcript)
     chunk_minutes = []
     for chunk in chunks:
         prompt = f"""Extract meeting minutes data from this chunk in JSON format:

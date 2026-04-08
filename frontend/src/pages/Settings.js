@@ -11,6 +11,7 @@ import {
   Loader,
   HardDrive,
   Cpu,
+  Database,
   ArrowLeft,
   RefreshCw,
   ChevronDown,
@@ -38,6 +39,14 @@ const Settings = ({ onNavigate }) => {
   const [pullProgress, setPullProgress] = useState('');
   const [deletingModel, setDeletingModel] = useState(null);
   const [showModels, setShowModels] = useState(true);
+  const [ragConfig, setRagConfig] = useState({
+    enabled: false,
+    qdrant_url: '',
+    collection_name: '',
+    qdrant_api_key: '',
+    top_k: 4
+  });
+  const [savingRag, setSavingRag] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [modeWarning, setModeWarning] = useState('');
@@ -98,11 +107,12 @@ const Settings = ({ onNavigate }) => {
   const loadSettings = useCallback(async () => {
     setLoading(true);
     try {
-      const [modeData, ollamaData, modelsData, recommendedData] = await Promise.all([
+      const [modeData, ollamaData, modelsData, recommendedData, ragData] = await Promise.all([
         safeFetch('/settings/ai-mode'),
         safeFetch('/settings/ollama/status'),
         safeFetch('/settings/ollama/models'),
-        safeFetch('/settings/ollama/models/recommended')
+        safeFetch('/settings/ollama/models/recommended'),
+        safeFetch('/settings/rag')
       ]);
 
       if (modeData) {
@@ -121,6 +131,16 @@ const Settings = ({ onNavigate }) => {
 
       if (recommendedData && recommendedData.models) {
         setRecommendedModels(recommendedData.models);
+      }
+
+      if (ragData) {
+        setRagConfig({
+          enabled: !!ragData.enabled,
+          qdrant_url: ragData.qdrant_url || '',
+          collection_name: ragData.collection_name || '',
+          qdrant_api_key: '',
+          top_k: ragData.top_k || 4
+        });
       }
     } catch (err) {
       console.error('Error loading settings:', err);
@@ -276,6 +296,64 @@ const Settings = ({ onNavigate }) => {
       setError('Failed to delete model');
     } finally {
       setDeletingModel(null);
+    }
+  };
+
+  const handleSaveRag = async () => {
+    setSavingRag(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const payload = {
+        enabled: ragConfig.enabled,
+        qdrant_url: ragConfig.qdrant_url,
+        collection_name: ragConfig.collection_name,
+        top_k: Number(ragConfig.top_k) || 4,
+        verify_connection: false
+      };
+
+      if (ragConfig.qdrant_api_key && ragConfig.qdrant_api_key.trim()) {
+        payload.qdrant_api_key = ragConfig.qdrant_api_key.trim();
+      }
+
+      const data = await safePost('/settings/rag', payload);
+      if (data?.error) {
+        setError(data.error);
+      } else {
+        setSuccess('Domain RAG settings saved and attached successfully');
+        setRagConfig((prev) => ({ ...prev, qdrant_api_key: '' }));
+      }
+    } catch (err) {
+      setError('Failed to save RAG settings');
+    } finally {
+      setSavingRag(false);
+    }
+  };
+
+  const handleDetachRag = async () => {
+    setSavingRag(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const data = await safeDelete('/settings/rag', {});
+      if (data?.error) {
+        setError(data.error);
+      } else {
+        setRagConfig({
+          enabled: false,
+          qdrant_url: '',
+          collection_name: '',
+          qdrant_api_key: '',
+          top_k: 4
+        });
+        setSuccess('Domain RAG detached');
+      }
+    } catch (err) {
+      setError('Failed to detach RAG');
+    } finally {
+      setSavingRag(false);
     }
   };
 
@@ -654,6 +732,93 @@ const Settings = ({ onNavigate }) => {
       )}
 
       {/* ─── Current Configuration Summary ──────────────────────── */}
+      <section>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center space-x-2">
+          <Database className="w-5 h-5" />
+          <span>Domain Knowledge RAG (Qdrant)</span>
+        </h2>
+
+        <div className="p-5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 space-y-4">
+          <label className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600">
+            <div>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">Enable domain RAG</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Use Qdrant context in all AI responses</p>
+            </div>
+            <input
+              type="checkbox"
+              checked={ragConfig.enabled}
+              onChange={(e) => setRagConfig((prev) => ({ ...prev, enabled: e.target.checked }))}
+              className="h-4 w-4"
+            />
+          </label>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Qdrant URL</label>
+              <input
+                type="text"
+                value={ragConfig.qdrant_url}
+                onChange={(e) => setRagConfig((prev) => ({ ...prev, qdrant_url: e.target.value }))}
+                placeholder="https://your-qdrant-cluster"
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Collection Name</label>
+              <input
+                type="text"
+                value={ragConfig.collection_name}
+                onChange={(e) => setRagConfig((prev) => ({ ...prev, collection_name: e.target.value }))}
+                placeholder="my-domain-knowledge"
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Qdrant API Key (optional)</label>
+              <input
+                type="password"
+                value={ragConfig.qdrant_api_key}
+                onChange={(e) => setRagConfig((prev) => ({ ...prev, qdrant_api_key: e.target.value }))}
+                placeholder="Enter only when updating"
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Top K Retrieval</label>
+              <input
+                type="number"
+                min="1"
+                max="10"
+                value={ragConfig.top_k}
+                onChange={(e) => setRagConfig((prev) => ({ ...prev, top_k: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleSaveRag}
+              disabled={savingRag}
+              className="px-4 py-2 text-sm font-medium bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded-lg transition-colors"
+            >
+              {savingRag ? 'Saving...' : 'Save & Attach'}
+            </button>
+            <button
+              onClick={handleDetachRag}
+              disabled={savingRag}
+              className="px-4 py-2 text-sm font-medium bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 rounded-lg transition-colors"
+            >
+              Detach
+            </button>
+          </div>
+
+          <div className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+            Blind query mode: Huddle sends only query embeddings to Qdrant for retrieval. Raw question text is not sent to Qdrant and is not logged.
+          </div>
+        </div>
+      </section>
+
       <section>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center space-x-2">
           <Info className="w-5 h-5" />
