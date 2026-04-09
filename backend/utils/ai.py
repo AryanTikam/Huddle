@@ -12,8 +12,11 @@ genai.configure(api_key=GEMINI_API_KEY)
 
 # Custom embedding class to avoid langchain-google-genai compatibility issues
 class GoogleGenerativeAIEmbeddings:
-    def __init__(self, model="models/embedding-001", google_api_key=None):
-        self.model = model
+    def __init__(self, model=None, google_api_key=None):
+        default_model = os.getenv("GEMINI_EMBED_MODEL", "models/gemini-embedding-001")
+        if default_model and not default_model.startswith("models/"):
+            default_model = f"models/{default_model}"
+        self.model = model or default_model
         self.google_api_key = google_api_key or GEMINI_API_KEY
         
     def embed_documents(self, texts):
@@ -41,7 +44,7 @@ class GoogleGenerativeAIEmbeddings:
         return result['embedding']
 
 # Initialize embeddings
-embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=GEMINI_API_KEY)
+embeddings = GoogleGenerativeAIEmbeddings(google_api_key=GEMINI_API_KEY)
 
 # Constants
 MAX_CONTEXT_SIZE = 30000  # Gemini's context limit

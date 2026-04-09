@@ -43,6 +43,19 @@ npm install
 npm start
 ```
 
+### 4️⃣ Seed Sample Chemistry Knowledge in Qdrant (RAG test)
+```bash
+cd backend
+python scripts/populate_chemistry_qdrant.py --recreate
+```
+
+Optional arguments:
+- `--qdrant-url` (default: `http://localhost:6333`)
+- `--qdrant-api-key` (for Qdrant Cloud)
+- `--collection` (default: `chemistry_knowledge`)
+- `--mode` (`off-device` for Gemini embeddings, `local` for Ollama embeddings)
+- `--test-query "..."` to run retrieval smoke test (pass empty string to skip)
+
 ### 3️⃣ Extension Setup 
 ```bash
 cd extension

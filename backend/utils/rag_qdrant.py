@@ -13,6 +13,65 @@ MAX_RAG_CONTEXT_CHARS = int(os.getenv("RAG_CONTEXT_MAX_CHARS", "5000"))
 MAX_QUERY_CHARS = int(os.getenv("RAG_QUERY_MAX_CHARS", "1200"))
 
 
+def _extract_expected_vector_size(collection_info: Any) -> Optional[int]:
+    """Best-effort extraction of collection vector size across Qdrant client versions."""
+    try:
+        config = getattr(collection_info, "config", None)
+        params = getattr(config, "params", None)
+        vectors = getattr(params, "vectors", None)
+
+        if vectors is None:
+            return None
+
+        size = getattr(vectors, "size", None)
+        if size is not None:
+            return int(size)
+
+        if isinstance(vectors, dict):
+            for value in vectors.values():
+                if isinstance(value, dict) and value.get("size") is not None:
+                    return int(value["size"])
+
+                nested_size = getattr(value, "size", None)
+                if nested_size is not None:
+                    return int(nested_size)
+
+        return None
+    except Exception:
+        return None
+
+
+def _candidate_modes(primary_mode: str) -> List[str]:
+    """Return preferred embedding modes to try, ordered by closeness to current mode."""
+    mode = (primary_mode or "off-device").strip()
+    if mode == "local":
+        candidates = ["local", "off-device"]
+    elif mode == "hybrid":
+        # Hybrid currently leans cloud-first for embedding compatibility.
+        candidates = ["off-device", "local"]
+    else:
+        candidates = ["off-device", "local"]
+
+    deduped: List[str] = []
+    for item in candidates:
+        if item not in deduped:
+            deduped.append(item)
+    return deduped
+
+
+def _embed_for_expected_dim(query_text: str, primary_mode: str, expected_dim: Optional[int]):
+    """Embed query and pick the first vector matching expected_dim (if provided)."""
+    for candidate_mode in _candidate_modes(primary_mode):
+        vector = _embed_query_private(query_text, candidate_mode)
+        if not vector:
+            continue
+
+        if expected_dim is None or len(vector) == expected_dim:
+            return vector, candidate_mode
+
+    return [], None
+
+
 def _normalize_qdrant_url(url: str) -> str:
     """Ensure Qdrant URL has a scheme so client parsing is consistent."""
     clean = (url or "").strip()
@@ -166,10 +225,6 @@ def retrieve_rag_context(
         return ""
 
     try:
-        vector = _embed_query_private(query_text, mode)
-        if not vector:
-            return ""
-
         client = QdrantClient(
             url=_normalize_qdrant_url(config["qdrant_url"]),
             api_key=config.get("qdrant_api_key") or None,
@@ -177,14 +232,43 @@ def retrieve_rag_context(
             check_compatibility=False,
         )
 
+        collection_info = client.get_collection(config["collection_name"])
+        expected_dim = _extract_expected_vector_size(collection_info)
+
+        vector, used_mode = _embed_for_expected_dim(query_text, mode, expected_dim)
+        if not vector:
+            query_fingerprint = hashlib.sha256((query_text or "").encode("utf-8")).hexdigest()[:12]
+            print(
+                f"[RAG] No compatible embedding vector for fingerprint={query_fingerprint}; "
+                f"expected_dim={expected_dim} mode={mode}"
+            )
+            return ""
+
+        if used_mode and used_mode != mode:
+            query_fingerprint = hashlib.sha256((query_text or "").encode("utf-8")).hexdigest()[:12]
+            print(
+                f"[RAG] Embedding mode fallback for fingerprint={query_fingerprint}: "
+                f"requested={mode} used={used_mode} expected_dim={expected_dim}"
+            )
+
         top_k = max(1, min(int(config.get("top_k") or DEFAULT_TOP_K), 10))
-        results = client.search(
-            collection_name=config["collection_name"],
-            query_vector=vector,
-            limit=top_k,
-            with_payload=True,
-            with_vectors=False,
-        )
+        if hasattr(client, "search"):
+            results = client.search(
+                collection_name=config["collection_name"],
+                query_vector=vector,
+                limit=top_k,
+                with_payload=True,
+                with_vectors=False,
+            )
+        else:
+            response = client.query_points(
+                collection_name=config["collection_name"],
+                query=vector,
+                limit=top_k,
+                with_payload=True,
+                with_vectors=False,
+            )
+            results = getattr(response, "points", [])
 
         snippets: List[str] = []
         for point in results:
