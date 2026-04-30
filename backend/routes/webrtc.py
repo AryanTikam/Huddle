@@ -167,7 +167,8 @@ def join_room(room_id):
     return jsonify({
         'meeting': updated_meeting,
         'participant': participant_data,
-        'is_host': user_id == meeting['host_id']
+        'is_host': user_id == meeting['host_id'],
+        'settings': meeting.get('settings', {})
     })
 
 @webrtc_bp.route('/room/<room_id>/transcript', methods=['POST'])
@@ -468,6 +469,13 @@ def get_room_info(room_id):
         meeting = db.meetings.find_one({'room_id': room_id.upper()})
         if not meeting:
             return jsonify({'error': 'Room not found'}), 404
+            
+        # Get live participant count from socket active_rooms if possible
+        active_rooms = current_app.config.get('ACTIVE_ROOMS', {})
+        if room_id.upper() in active_rooms:
+            participant_count = len(active_rooms[room_id.upper()])
+        else:
+            participant_count = len([p for p in meeting.get('participants', []) if p.get('is_online', False)])
         
         return jsonify({
             'room_id': meeting['room_id'],
@@ -475,7 +483,7 @@ def get_room_info(room_id):
             'title': meeting.get('title', ''),
             'host_name': meeting.get('host_name', ''),
             'status': meeting.get('status', ''),
-            'participant_count': len([p for p in meeting.get('participants', []) if p.get('is_online', False)]),
+            'participant_count': participant_count,
             'max_participants': meeting.get('settings', {}).get('participant_limit', 10),
             'created_at': meeting['created_at'].isoformat() + 'Z' if meeting.get('created_at') else None
         })

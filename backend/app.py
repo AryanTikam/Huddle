@@ -174,198 +174,399 @@ else:
 
 jwt = JWTManager(app)
 
-# Store active room connections with mute status
+# Store active room connections with mute status and metadata
 active_rooms = {}
+app.config['ACTIVE_ROOMS'] = active_rooms
+
+# Map socket IDs to authenticated user info
+socket_user_map = {}
 
 # JWT Error handlers
 @jwt.expired_token_loader
 def expired_token_callback(jwt_header, jwt_payload):
     return jsonify({'error': 'Token has expired'}), 401
 
-# Socket.IO events for WebRTC signaling
+# ─── Helper: fetch meeting settings from DB ───────────────────────
+def _get_meeting_settings(room_id):
+    """Fetch meeting settings from MongoDB for a given room_id."""
+    try:
+        if mongo and mongo.db:
+            meeting = mongo.db.meetings.find_one({'room_id': room_id})
+            if meeting:
+                return meeting.get('settings', {}), meeting
+    except Exception as e:
+        print(f'[SOCKET] Error fetching meeting settings: {e}')
+    return {}, None
+
+# ─── Socket.IO events for secure WebRTC signaling ─────────────────
 @socketio.on('connect')
-def on_connect():
-    print(f'Client connected: {request.sid}')
+def on_connect(auth=None):
+    """Authenticated socket connection with optional JWT token."""
+    token = None
+    if auth and isinstance(auth, dict):
+        token = auth.get('token')
+    if not token:
+        token = request.args.get('token')
+
+    user_info = {'authenticated': False, 'user_id': None, 'user_name': None}
+
+    if token:
+        try:
+            from flask_jwt_extended import decode_token
+            decoded = decode_token(token)
+            user_id = decoded.get('sub')
+            if user_id and mongo and mongo.db:
+                user = mongo.db.users.find_one({'_id': ObjectId(user_id)})
+                if user:
+                    user_info = {
+                        'authenticated': True,
+                        'user_id': user_id,
+                        'user_name': user.get('name', 'Unknown')
+                    }
+        except Exception as e:
+            print(f'[SOCKET] JWT validation failed: {e}')
+
+    socket_user_map[request.sid] = user_info
+    print(f'[SOCKET] Client connected: {request.sid} (authenticated: {user_info["authenticated"]})')
 
 @socketio.on('disconnect')
 def on_disconnect():
-    print(f'Client disconnected: {request.sid}')
+    sid = request.sid
+    print(f'[SOCKET] Client disconnected: {sid}')
+
     # Clean up user from all rooms
     for room_id in list(active_rooms.keys()):
-        if request.sid in active_rooms[room_id]:
-            user_info = active_rooms[room_id][request.sid]
-            del active_rooms[room_id][request.sid]
-            
+        if sid in active_rooms[room_id]:
+            user_info = active_rooms[room_id][sid]
+            del active_rooms[room_id][sid]
+
             emit('user-left', {
-                'socket_id': request.sid,
+                'socket_id': sid,
                 'user_id': user_info['user_id']
             }, room=room_id)
-            
-            print(f'Removed user {user_info["user_name"]} from room {room_id}')
+
+            print(f'[SOCKET] Removed {user_info["user_name"]} from room {room_id}')
+
+            # Auto-cleanup empty rooms
+            if not active_rooms[room_id]:
+                del active_rooms[room_id]
+                print(f'[SOCKET] Room {room_id} empty — cleaned up')
+
+    # Clean up socket user map
+    socket_user_map.pop(sid, None)
 
 @socketio.on('join-room')
 def on_join_room(data):
     room_id = data.get('room_id')
-    user_id = data.get('user_id') 
+    user_id = data.get('user_id')
     user_name = data.get('user_name')
-    
+
     print(f'[SOCKET] User {user_name} (ID: {user_id}) joining room {room_id}')
-    print(f'[SOCKET] Request SID: {request.sid}')
-    
+
     if not room_id:
-        print(f'[SOCKET] Error: No room_id provided')
         emit('error', {'message': 'Room ID is required'})
         return
-     
-    # Ensure consistent room ID formatting
+
     room_id = room_id.upper()
-    
+
+    # Fetch meeting settings from DB
+    settings, meeting = _get_meeting_settings(room_id)
+    mute_on_join = settings.get('mute_on_join', True)
+    video_on_join = settings.get('video_on_join', True)
+    auto_transcription = settings.get('auto_transcription', True)
+    participant_limit = settings.get('participant_limit', 10)
+
+    # Enforce participant limit
+    if room_id in active_rooms and len(active_rooms[room_id]) >= participant_limit:
+        emit('error', {'message': 'Meeting is full', 'code': 'ROOM_FULL'})
+        return
+
     join_room(room_id)
-    print(f'[SOCKET] Joined socket room: {room_id}')
-    
-    # Initialize room if not exists
+
     if room_id not in active_rooms:
         active_rooms[room_id] = {}
-        print(f'[SOCKET] Created new room: {room_id}')
-    
-    # Add user to room with initial mute status
+
+    # Determine if this user is the host
+    is_host = False
+    if meeting:
+        is_host = (meeting.get('host_id') == user_id)
+
+    # Add user to room with server-tracked mute/video status
     active_rooms[room_id][request.sid] = {
         'user_id': user_id,
         'user_name': user_name,
-        'is_muted': True  # Default to muted
+        'is_muted': mute_on_join,
+        'is_video_off': not video_on_join,
+        'is_screen_sharing': False,
+        'is_host': is_host
     }
-    
-    print(f'[SOCKET] Room {room_id} now has {len(active_rooms[room_id])} participants')
-    print(f'[SOCKET] Current participants: {list(active_rooms[room_id].keys())}')
-    
-    # Get existing users in room (excluding the new user)
+
+    print(f'[SOCKET] Room {room_id}: {len(active_rooms[room_id])} participants')
+
+    # Get existing users
     existing_users = []
-    for sid, user_info in active_rooms[room_id].items():
-        if sid != request.sid:  # Don't include the new user
+    for sid, uinfo in active_rooms[room_id].items():
+        if sid != request.sid:
             existing_users.append({
-                'user_id': user_info['user_id'],
-                'user_name': user_info['user_name'],
+                'user_id': uinfo['user_id'],
+                'user_name': uinfo['user_name'],
                 'socket_id': sid,
-                'is_muted': user_info.get('is_muted', True)
+                'is_muted': uinfo.get('is_muted', True),
+                'is_video_off': uinfo.get('is_video_off', False),
+                'is_screen_sharing': uinfo.get('is_screen_sharing', False),
+                'is_host': uinfo.get('is_host', False)
             })
-    
-    print(f'[SOCKET] Sending {len(existing_users)} existing users to new participant')
-    
-    # Send existing users to the new user
+
+    # Send existing users + enforced settings to the new user
     emit('existing-users', existing_users)
-    
+    emit('meeting-settings', {
+        'mute_on_join': mute_on_join,
+        'video_on_join': video_on_join,
+        'auto_transcription': auto_transcription,
+        'participant_limit': participant_limit,
+        'is_host': is_host
+    })
+
     # Notify existing users about the new participant
     emit('user-joined', {
         'user_id': user_id,
         'user_name': user_name,
         'socket_id': request.sid,
-        'is_muted': True  # Default to muted
+        'is_muted': mute_on_join,
+        'is_video_off': not video_on_join,
+        'is_host': is_host
     }, room=room_id, include_self=False)
-    
-    print(f'[SOCKET] Notified existing users about new participant')
 
+# ─── WebRTC Signaling ─────────────────────────────────────────────
 @socketio.on('offer')
 def on_offer(data):
     target_id = data.get('target')
-    offer = data.get('offer')
-    caller_id = request.sid
-    
-    print(f'Relaying offer from {caller_id} to {target_id}')
-    
     emit('offer', {
-        'offer': offer,
-        'caller': caller_id
+        'offer': data.get('offer'),
+        'caller': request.sid
     }, room=target_id)
 
 @socketio.on('answer')
 def on_answer(data):
     target_id = data.get('target')
-    answer = data.get('answer')
-    caller_id = request.sid
-    
-    print(f'Relaying answer from {caller_id} to {target_id}')
-    
     emit('answer', {
-        'answer': answer,
-        'caller': caller_id
+        'answer': data.get('answer'),
+        'caller': request.sid
     }, room=target_id)
 
 @socketio.on('ice-candidate')
 def on_ice_candidate(data):
     target_id = data.get('target')
-    candidate = data.get('candidate')
-    caller_id = request.sid
-    
     emit('ice-candidate', {
-        'candidate': candidate,
-        'caller': caller_id
+        'candidate': data.get('candidate'),
+        'caller': request.sid
     }, room=target_id)
 
+# ─── Transcript with server-side mute enforcement ─────────────────
 @socketio.on('transcript-update')
 def on_transcript_update(data):
     room_id = data.get('room_id')
     transcript_data = data.get('transcript')
-    
-    # Additional privacy check: Only broadcast if speaker was unmuted
-    if transcript_data and not transcript_data.get('is_muted', True):
-        # Broadcast transcript to all users in room (excluding sender)
-        emit('transcript-update', transcript_data, room=room_id, include_self=False)
-        print(f'Broadcasted transcript from unmuted user: {transcript_data.get("speaker_name", "Unknown")}')
-    else:
-        print(f'Blocked transcript from muted user for privacy: {transcript_data.get("speaker_name", "Unknown")}')
 
+    if not room_id or not transcript_data:
+        return
+
+    room_id = room_id.upper()
+
+    # SERVER-SIDE ENFORCEMENT: Check actual mute status from our records
+    # Do NOT trust the client's is_muted field
+    sender_info = active_rooms.get(room_id, {}).get(request.sid)
+    if not sender_info:
+        print(f'[SOCKET] Transcript rejected: sender {request.sid} not in room {room_id}')
+        return
+
+    if sender_info.get('is_muted', True):
+        print(f'[SOCKET] Transcript BLOCKED (server-side): {sender_info["user_name"]} is muted')
+        return
+
+    # Check if transcription is enabled for this meeting
+    settings, _ = _get_meeting_settings(room_id)
+    if not settings.get('auto_transcription', True):
+        print(f'[SOCKET] Transcript BLOCKED: transcription disabled for room {room_id}')
+        return
+
+    # Safe to broadcast — user is verified unmuted
+    transcript_data['is_muted'] = False  # Override with server truth
+    emit('transcript-update', transcript_data, room=room_id, include_self=False)
+    print(f'[SOCKET] Transcript OK from {sender_info["user_name"]}')
+
+# ─── Mute status with server tracking ─────────────────────────────
 @socketio.on('participant-mute-status')
 def on_participant_mute_status(data):
     room_id = data.get('room_id')
-    socket_id = data.get('socket_id')
     is_muted = data.get('is_muted', True)
     user_name = data.get('user_name', 'Unknown')
-    
-    print(f'Mute status update: {user_name} is {"muted" if is_muted else "unmuted"}')
-    
-    # Update mute status in active rooms
-    if room_id in active_rooms:
-        if socket_id == 'local':
-            # Handle local user mute status (use sender's socket ID)
-            socket_id = request.sid
-        
-        if socket_id in active_rooms[room_id]:
-            active_rooms[room_id][socket_id]['is_muted'] = is_muted
-        
-        # Broadcast mute status to all participants
+
+    if not room_id:
+        return
+    room_id = room_id.upper()
+
+    # Always use the sender's actual socket ID
+    actual_sid = request.sid
+
+    # Update server-side mute status
+    if room_id in active_rooms and actual_sid in active_rooms[room_id]:
+        active_rooms[room_id][actual_sid]['is_muted'] = is_muted
+        print(f'[SOCKET] Mute status: {user_name} -> {"muted" if is_muted else "unmuted"} (server-tracked)')
+
         emit('participant-mute-status', {
-            'socket_id': socket_id,
+            'socket_id': actual_sid,
             'is_muted': is_muted,
             'user_name': user_name
         }, room=room_id, include_self=False)
 
+# ─── Video status tracking ────────────────────────────────────────
+@socketio.on('participant-video-status')
+def on_participant_video_status(data):
+    room_id = data.get('room_id')
+    is_video_off = data.get('is_video_off', False)
+    user_name = data.get('user_name', 'Unknown')
+
+    if not room_id:
+        return
+    room_id = room_id.upper()
+
+    actual_sid = request.sid
+    if room_id in active_rooms and actual_sid in active_rooms[room_id]:
+        active_rooms[room_id][actual_sid]['is_video_off'] = is_video_off
+
+        emit('participant-video-status', {
+            'socket_id': actual_sid,
+            'is_video_off': is_video_off,
+            'user_name': user_name
+        }, room=room_id, include_self=False)
+
+# ─── Screen sharing events ────────────────────────────────────────
+@socketio.on('screen-share-started')
+def on_screen_share_started(data):
+    room_id = data.get('room_id')
+    if not room_id:
+        return
+    room_id = room_id.upper()
+
+    if room_id in active_rooms and request.sid in active_rooms[room_id]:
+        active_rooms[room_id][request.sid]['is_screen_sharing'] = True
+        emit('screen-share-started', {
+            'socket_id': request.sid,
+            'user_name': active_rooms[room_id][request.sid]['user_name']
+        }, room=room_id, include_self=False)
+
+@socketio.on('screen-share-stopped')
+def on_screen_share_stopped(data):
+    room_id = data.get('room_id')
+    if not room_id:
+        return
+    room_id = room_id.upper()
+
+    if room_id in active_rooms and request.sid in active_rooms[room_id]:
+        active_rooms[room_id][request.sid]['is_screen_sharing'] = False
+        emit('screen-share-stopped', {
+            'socket_id': request.sid,
+            'user_name': active_rooms[room_id][request.sid]['user_name']
+        }, room=room_id, include_self=False)
+
+# ─── Host controls ────────────────────────────────────────────────
+@socketio.on('force-mute')
+def on_force_mute(data):
+    """Host can force-mute a participant."""
+    room_id = data.get('room_id')
+    target_sid = data.get('target_socket_id')
+
+    if not room_id:
+        return
+    room_id = room_id.upper()
+
+    # Verify sender is host
+    sender = active_rooms.get(room_id, {}).get(request.sid)
+    if not sender or not sender.get('is_host', False):
+        emit('error', {'message': 'Only the host can force-mute participants'})
+        return
+
+    # Update target's mute status
+    if target_sid in active_rooms.get(room_id, {}):
+        active_rooms[room_id][target_sid]['is_muted'] = True
+        target_name = active_rooms[room_id][target_sid]['user_name']
+
+        # Notify the target that they've been muted
+        emit('force-muted', {
+            'muted_by': sender['user_name']
+        }, room=target_sid)
+
+        # Broadcast to all
+        emit('participant-mute-status', {
+            'socket_id': target_sid,
+            'is_muted': True,
+            'user_name': target_name,
+            'forced_by': sender['user_name']
+        }, room=room_id, include_self=True)
+
+        print(f'[SOCKET] Host {sender["user_name"]} force-muted {target_name}')
+
+# ─── Reactions ────────────────────────────────────────────────────
+@socketio.on('reaction')
+def on_reaction(data):
+    room_id = data.get('room_id')
+    if not room_id:
+        return
+    room_id = room_id.upper()
+
+    sender = active_rooms.get(room_id, {}).get(request.sid)
+    if sender:
+        emit('reaction', {
+            'socket_id': request.sid,
+            'user_name': sender['user_name'],
+            'emoji': data.get('emoji', '👍')
+        }, room=room_id, include_self=False)
+
+# ─── Leave / End meeting ──────────────────────────────────────────
 @socketio.on('leave-room')
 def on_leave_room(data):
     room_id = data.get('room_id')
-    
-    if room_id and request.sid in active_rooms.get(room_id, {}):
+    if not room_id:
+        return
+    room_id = room_id.upper()
+
+    if request.sid in active_rooms.get(room_id, {}):
         user_info = active_rooms[room_id][request.sid]
         del active_rooms[room_id][request.sid]
-        
+
         leave_room(room_id)
-        
-        # Notify others
+
         emit('user-left', {
             'socket_id': request.sid,
             'user_id': user_info['user_id']
         }, room=room_id)
-        
-        print(f'User {user_info["user_name"]} left room {room_id}')
+
+        print(f'[SOCKET] {user_info["user_name"]} left room {room_id}')
+
+        # Auto-cleanup empty rooms
+        if not active_rooms.get(room_id):
+            active_rooms.pop(room_id, None)
+            print(f'[SOCKET] Room {room_id} empty — cleaned up')
 
 @socketio.on('meeting-ended')
 def on_meeting_ended(data):
     room_id = data.get('room_id')
     host_name = data.get('host_name', 'Host')
     meeting_data = data.get('meeting_data', {})
-    
-    print(f'Meeting {room_id} ended by host')
-    
-    # Notify all participants in the room
+
+    if not room_id:
+        return
+    room_id = room_id.upper()
+
+    # Verify sender is host
+    sender = active_rooms.get(room_id, {}).get(request.sid)
+    if not sender or not sender.get('is_host', False):
+        emit('error', {'message': 'Only the host can end the meeting'})
+        return
+
+    print(f'[SOCKET] Meeting {room_id} ended by host {host_name}')
+
     emit('meeting-ended', {
         'room_id': room_id,
         'host_name': host_name,
@@ -373,21 +574,29 @@ def on_meeting_ended(data):
         'message': f'Meeting ended by {host_name}',
         'meeting_data': meeting_data
     }, room=room_id, include_self=False)
-    
+
     # Clean up room
-    if room_id in active_rooms:
-        del active_rooms[room_id]
-        print(f'Cleaned up room: {room_id}')
+    active_rooms.pop(room_id, None)
+    print(f'[SOCKET] Cleaned up room: {room_id}')
 
 @socketio.on('transcription-toggled')
 def on_transcription_toggled(data):
     room_id = data.get('room_id')
     enabled = data.get('enabled', False)
     host_name = data.get('host_name', 'Host')
-    
-    print(f'Transcription {"enabled" if enabled else "disabled"} in room {room_id}')
-    
-    # Notify all participants about transcription status
+
+    if not room_id:
+        return
+    room_id = room_id.upper()
+
+    # Verify sender is host
+    sender = active_rooms.get(room_id, {}).get(request.sid)
+    if not sender or not sender.get('is_host', False):
+        emit('error', {'message': 'Only the host can toggle transcription'})
+        return
+
+    print(f'[SOCKET] Transcription {"enabled" if enabled else "disabled"} in room {room_id}')
+
     emit('transcription-status-changed', {
         'enabled': enabled,
         'message': f'Transcription {"enabled" if enabled else "disabled"} by {host_name}',

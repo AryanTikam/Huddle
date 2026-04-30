@@ -101,6 +101,7 @@ const AppContent = () => {
 
   const handleJoinMeeting = (meeting, isHostParam) => {
     setMeetingData(meeting);
+    setRoomId(meeting.room_id || roomId);
     setIsHost(isHostParam);
     setActiveView('webrtc-meeting');
   };
