@@ -358,7 +358,7 @@ const MeetingDetails = ({ meetingId, activeTab, onBack, onTabChange }) => {
             <span>Back to Meetings</span>
           </button>
 
-          <div className="flex items-center space-x-2 sm:space-x-3 overflow-x-auto">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {/* Export All - New comprehensive dropdown */}
             <div className="relative group flex-shrink-0">
               <button className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-lg transition-colors shadow-md text-sm">
@@ -366,7 +366,7 @@ const MeetingDetails = ({ meetingId, activeTab, onBack, onTabChange }) => {
                 <span className="hidden sm:inline">Export Report</span>
               </button>
               
-              <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+              <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
                 <div className="p-2">
                   <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">
                     Complete Meeting Report
@@ -797,7 +797,7 @@ const SummaryView = ({ summary, meetingId }) => {
                   <FileDown className="w-4 h-4" />
                   <span className="hidden sm:inline">Export Summary</span>
                 </button>
-                <div className="absolute right-0 top-full mt-2 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
                   <div className="p-2">
                     <button
                       onClick={() => downloadFile(`/report/${meetingId}/summary/pdf`, `summary_${meetingId}.pdf`)}
@@ -1121,7 +1121,7 @@ const MinutesView = ({ minutes, meetingId }) => {
                   <FileDown className="w-4 h-4" />
                   <span className="hidden sm:inline">Export Minutes</span>
                 </button>
-                <div className="absolute right-0 top-full mt-2 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
                   <div className="p-2">
                     <button
                       onClick={() => downloadFile(`/report/${meetingId}/minutes/pdf`, `minutes_${meetingId}.pdf`)}
@@ -1629,7 +1629,7 @@ const InsightsView = ({ insights, meetingId }) => {
                   <FileDown className="w-4 h-4" />
                   <span className="hidden sm:inline">Export Insights</span>
                 </button>
-                <div className="absolute right-0 top-full mt-2 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
                   <div className="p-2">
                     <button
                       onClick={() => downloadFile(`/report/${meetingId}/insights/pdf`, `insights_${meetingId}.pdf`)}

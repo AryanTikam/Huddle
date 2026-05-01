@@ -248,9 +248,19 @@ def _render_summary_structure(summary, styles):
         flowables.append(Spacer(1, 8))
         
         for i, point in enumerate(summary['key_points'], 1):
+            if isinstance(point, dict):
+                point_text = str(point.get('point', 'N/A'))
+                importance = str(point.get('importance', 'N/A')).upper()
+            else:
+                point_text = str(point)
+                importance = 'N/A'
+                
+            cell_style = ParagraphStyle('PointCell', parent=styles['Normal'], fontSize=9, leading=12, textColor=colors.HexColor('#1F2937'))
+            point_para = Paragraph(point_text, cell_style)
+            
             point_data = [
-                [f"{i}.", point.get('point', 'N/A')],
-                ['', f"Priority: {point.get('importance', 'N/A').upper()}"]
+                [f"{i}.", point_para],
+                ['', f"Priority: {importance}"]
             ]
             
             point_table = Table(point_data, colWidths=[0.3*inch, 5.7*inch])
@@ -298,12 +308,24 @@ def _render_summary_structure(summary, styles):
         
         action_data = [['#', 'Task', 'Owner', 'Deadline', 'Priority']]
         for i, item in enumerate(summary['action_items'], 1):
+            if isinstance(item, dict):
+                task_text = str(item.get('task', 'N/A'))
+                owner = str(item.get('owner', 'N/A'))
+                deadline = str(item.get('deadline', 'N/A'))
+                priority = str(item.get('priority', 'N/A')).upper()
+            else:
+                task_text = str(item)
+                owner, deadline, priority = 'N/A', 'N/A', 'N/A'
+                
+            task_style = ParagraphStyle('TaskCell', parent=styles['Normal'], fontSize=9, leading=11, textColor=colors.HexColor('#1F2937'))
+            task_para = Paragraph(task_text, task_style)
+            
             action_data.append([
                 str(i),
-                item.get('task', 'N/A'),
-                item.get('owner', 'N/A'),
-                item.get('deadline', 'N/A'),
-                item.get('priority', 'N/A').upper()
+                task_para,
+                owner,
+                deadline,
+                priority
             ])
         
         action_table = Table(action_data, colWidths=[0.3*inch, 2.5*inch, 1.5*inch, 1*inch, 0.7*inch])
@@ -448,12 +470,24 @@ def _render_minutes_structure(minutes, styles):
         
         action_data = [['#', 'Task', 'Assignee', 'Deadline', 'Status']]
         for i, item in enumerate(minutes['action_items'], 1):
+            if isinstance(item, dict):
+                task_text = str(item.get('task', 'N/A'))
+                assignee = str(item.get('assignee', 'N/A'))
+                deadline = str(item.get('deadline', 'N/A'))
+                status = str(item.get('status', 'pending')).upper()
+            else:
+                task_text = str(item)
+                assignee, deadline, status = 'N/A', 'N/A', 'PENDING'
+                
+            task_style = ParagraphStyle('TaskCell', parent=styles['Normal'], fontSize=9, leading=11, textColor=colors.HexColor('#1F2937'))
+            task_para = Paragraph(task_text, task_style)
+            
             action_data.append([
                 str(i),
-                item.get('task', 'N/A'),
-                item.get('assignee', 'N/A'),
-                item.get('deadline', 'N/A'),
-                item.get('status', 'pending').upper()
+                task_para,
+                assignee,
+                deadline,
+                status
             ])
         
         action_table = Table(action_data, colWidths=[0.3*inch, 2.5*inch, 1.5*inch, 1*inch, 0.7*inch])
