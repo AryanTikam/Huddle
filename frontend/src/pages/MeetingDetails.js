@@ -16,7 +16,8 @@ import {
   Brain,
   RefreshCw,
   ClipboardList,
-  FileDown  // Add this import
+  FileDown,
+  Trash2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import TranscriptViewer from '../components/TranscriptViewer';
@@ -139,6 +140,28 @@ const MeetingDetails = ({ meetingId, activeTab, onBack, onTabChange }) => {
       console.error('Error moving meeting:', error);
     } finally {
       setIsMoving(false);
+    }
+  };
+
+  const handleDeleteMeeting = async () => {
+    if (!window.confirm('Are you sure you want to delete this meeting? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      const response = await makeAuthenticatedRequest(`/meetings/${meetingId}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        onBack();
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Failed to delete meeting');
+      }
+    } catch (error) {
+      console.error('Error deleting meeting:', error);
+      setError('Network error occurred while deleting');
     }
   };
 
@@ -384,6 +407,14 @@ const MeetingDetails = ({ meetingId, activeTab, onBack, onTabChange }) => {
             >
               <Edit className="w-4 h-4" />
               <span>Edit</span>
+            </button>
+
+            <button
+              onClick={handleDeleteMeeting}
+              className="flex items-center space-x-2 px-4 py-2 bg-red-100 dark:bg-red-900 hover:bg-red-200 dark:bg-red-800 text-red-700 dark:text-red-300 rounded-lg transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Delete</span>
             </button>
           </div>
         </div>

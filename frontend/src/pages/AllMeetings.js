@@ -54,6 +54,7 @@ const AllMeetings = ({ onMeetingClick }) => {
   
   // Individual meeting actions
   const [showMeetingMenu, setShowMeetingMenu] = useState(null);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const [showIndividualMoveDialog, setShowIndividualMoveDialog] = useState(null);
   const [showIndividualDeleteConfirm, setShowIndividualDeleteConfirm] = useState(null);
   
@@ -434,6 +435,123 @@ const AllMeetings = ({ onMeetingClick }) => {
     return sorted;
   }, [meetings, sortBy, sortOrder, folders]);  // Dependencies: re-sort when these change
 
+  const renderMeetingMenu = (meeting) => {
+    const meetingId = meeting.id || meeting._id;
+    if (showMeetingMenu !== meetingId) return null;
+
+    return (
+      <div 
+        className="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700"
+        style={{ 
+          zIndex: 9999,
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="py-2">
+          <button
+            onClick={() => {
+              onMeetingClick(meetingId);
+              setShowMeetingMenu(null);
+              setShowExportMenu(false);
+            }}
+            className="w-full flex items-center space-x-3 px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
+            <Eye className="w-4 h-4" />
+            <span>View Details</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setShowIndividualMoveDialog(meeting);
+              setShowMeetingMenu(null);
+              setShowExportMenu(false);
+            }}
+            className="w-full flex items-center space-x-3 px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
+            <Move className="w-4 h-4" />
+            <span>Move to Folder</span>
+          </button>
+
+          <button
+            onClick={() => {
+              shareIndividualMeeting(meetingId);
+              setShowMeetingMenu(null);
+              setShowExportMenu(false);
+            }}
+            className="w-full flex items-center space-x-3 px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
+            <Share2 className="w-4 h-4" />
+            <span>Share</span>
+          </button>
+
+          <button
+            onClick={() => setShowExportMenu(prev => !prev)}
+            className="w-full flex items-center justify-between px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
+            <div className="flex items-center space-x-3">
+              <Download className="w-4 h-4" />
+              <span>Export</span>
+            </div>
+            <span
+              className="text-xs transition-transform duration-200"
+              style={{ display: 'inline-block', transform: showExportMenu ? 'rotate(90deg)' : 'rotate(0deg)' }}
+            >›</span>
+          </button>
+
+          {showExportMenu && (
+            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg mx-2 mb-1 p-1 border border-gray-100 dark:border-gray-700">
+              <button
+                onClick={() => {
+                  downloadIndividualReport(meetingId, 'pdf');
+                  setShowMeetingMenu(null);
+                  setShowExportMenu(false);
+                }}
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors rounded"
+              >
+                Export as PDF
+              </button>
+              <button
+                onClick={() => {
+                  downloadIndividualReport(meetingId, 'json');
+                  setShowMeetingMenu(null);
+                  setShowExportMenu(false);
+                }}
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors rounded"
+              >
+                Export as JSON
+              </button>
+              <button
+                onClick={() => {
+                  downloadIndividualReport(meetingId, 'txt');
+                  setShowMeetingMenu(null);
+                  setShowExportMenu(false);
+                }}
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors rounded"
+              >
+                Export as TXT
+              </button>
+            </div>
+          )}
+
+          <hr className="my-2 border-gray-200 dark:border-gray-700" />
+
+          <button
+            onClick={() => {
+              setShowIndividualDeleteConfirm(meeting);
+              setShowMeetingMenu(null);
+              setShowExportMenu(false);
+            }}
+            className="w-full flex items-center space-x-3 px-4 py-2 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>Delete</span>
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   const renderMeetingCard = (meeting) => {
     const folder = folders.find(f => f.id === meeting.folder_id);
     const folderColor = folder?.color || '#3B82F6';
@@ -447,7 +565,7 @@ const AllMeetings = ({ onMeetingClick }) => {
           isSelected 
             ? 'border-blue-500 dark:border-blue-400 shadow-lg' 
             : 'border-gray-200 dark:border-gray-700'
-        } shadow-sm hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 cursor-pointer group relative overflow-hidden`}
+        } shadow-sm hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 cursor-pointer group relative ${showMeetingMenu === meetingId ? 'z-50' : 'z-0'}`}
         onClick={() => onMeetingClick(meetingId)}
       >
         {/* Selection checkbox */}
@@ -469,8 +587,8 @@ const AllMeetings = ({ onMeetingClick }) => {
 
         {/* Color bar at top - confined to tab area */}
         <div 
-          className="h-1"
-          style={{ backgroundColor: folderColor }}
+          className="h-1 w-full"
+          style={{ backgroundColor: folderColor, borderTopLeftRadius: '15px', borderTopRightRadius: '15px' }}
         />
         
         <div className="p-6 pt-12">
@@ -529,7 +647,9 @@ const AllMeetings = ({ onMeetingClick }) => {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    setShowMeetingMenu(showMeetingMenu === meetingId ? null : meetingId);
+                    const nextMenu = showMeetingMenu === meetingId ? null : meetingId;
+                    setShowMeetingMenu(nextMenu);
+                    if (!nextMenu) setShowExportMenu(false);
                   }}
                   className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
@@ -537,121 +657,7 @@ const AllMeetings = ({ onMeetingClick }) => {
                 </button>
 
                 {/* Dropdown menu - positioned to extend outside card */}
-                {showMeetingMenu === meetingId && (
-                  <div 
-                    className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700"
-                    style={{ 
-                      zIndex: 9999,
-                      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
-                    }}
-                  >
-                    <div className="py-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onMeetingClick(meetingId);
-                          setShowMeetingMenu(null);
-                        }}
-                        className="w-full flex items-center space-x-3 px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                      >
-                        <Eye className="w-4 h-4" />
-                        <span>View Details</span>
-                      </button>
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowIndividualMoveDialog(meeting);
-                          setShowMeetingMenu(null);
-                        }}
-                        className="w-full flex items-center space-x-3 px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                      >
-                        <Move className="w-4 h-4" />
-                        <span>Move to Folder</span>
-                      </button>
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          shareIndividualMeeting(meetingId);
-                          setShowMeetingMenu(null);
-                        }}
-                        className="w-full flex items-center space-x-3 px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                      >
-                        <Share2 className="w-4 h-4" />
-                        <span>Share</span>
-                      </button>
-
-                      <div className="relative group/export">
-                        <button
-                          className="w-full flex items-center justify-between px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                        >
-                          <div className="flex items-center space-x-3">
-                            <Download className="w-4 h-4" />
-                            <span>Export</span>
-                          </div>
-                          <span className="text-xs">›</span>
-                        </button>
-                        
-                        {/* Export submenu */}
-                        <div 
-                          className="absolute left-full top-0 w-32 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover/export:opacity-100 group-hover/export:visible transition-all duration-200"
-                          style={{ 
-                            zIndex: 10000,
-                            marginLeft: '4px'
-                          }}
-                        >
-                          <div className="py-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                downloadIndividualReport(meetingId, 'pdf');
-                                setShowMeetingMenu(null);
-                              }}
-                              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            >
-                              PDF
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                downloadIndividualReport(meetingId, 'json');
-                                setShowMeetingMenu(null);
-                              }}
-                              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            >
-                              JSON
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                downloadIndividualReport(meetingId, 'txt');
-                                setShowMeetingMenu(null);
-                              }}
-                              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            >
-                              TXT
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      <hr className="my-2 border-gray-200 dark:border-gray-700" />
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowIndividualDeleteConfirm(meeting);
-                          setShowMeetingMenu(null);
-                        }}
-                        className="w-full flex items-center space-x-3 px-4 py-2 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        <span>Delete</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
+                {renderMeetingMenu(meeting)}
               </div>
             </div>
           </div>
@@ -983,7 +989,9 @@ const AllMeetings = ({ onMeetingClick }) => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setShowMeetingMenu(showMeetingMenu === meetingId ? null : meetingId);
+                              const nextMenu = showMeetingMenu === meetingId ? null : meetingId;
+                              setShowMeetingMenu(nextMenu);
+                              if (!nextMenu) setShowExportMenu(false);
                             }}
                             className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
                           >
@@ -991,67 +999,7 @@ const AllMeetings = ({ onMeetingClick }) => {
                           </button>
 
                           {/* Same dropdown menu as in grid view */}
-                          {showMeetingMenu === meetingId && (
-                            <div 
-                              className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700"
-                              style={{ 
-                                zIndex: 9999,
-                                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
-                              }}
-                            >
-                              <div className="py-2">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onMeetingClick(meetingId);
-                                    setShowMeetingMenu(null);
-                                  }}
-                                  className="w-full flex items-center space-x-3 px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                  <span>View Details</span>
-                                </button>
-
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShowIndividualMoveDialog(meeting);
-                                    setShowMeetingMenu(null);
-                                  }}
-                                  className="w-full flex items-center space-x-3 px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                >
-                                  <Move className="w-4 h-4" />
-                                  <span>Move to Folder</span>
-                                </button>
-
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    shareIndividualMeeting(meetingId);
-                                    setShowMeetingMenu(null);
-                                  }}
-                                  className="w-full flex items-center space-x-3 px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                >
-                                  <Share2 className="w-4 h-4" />
-                                  <span>Share</span>
-                                </button>
-
-                                <hr className="my-2 border-gray-200 dark:border-gray-700" />
-
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShowIndividualDeleteConfirm(meeting);
-                                    setShowMeetingMenu(null);
-                                  }}
-                                  className="w-full flex items-center space-x-3 px-4 py-2 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                  <span>Delete</span>
-                                </button>
-                              </div>
-                            </div>
-                          )}
+                          {renderMeetingMenu(meeting)}
                         </div>
                       </div>
                     </div>

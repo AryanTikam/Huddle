@@ -16,6 +16,20 @@ import re
 
 report_bp = Blueprint('report', __name__)
 
+class _DatetimeEncoder(json.JSONEncoder):
+    """Custom encoder that serializes datetime and ObjectId to strings."""
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat() + 'Z'
+        if isinstance(obj, ObjectId):
+            return str(obj)
+        return super().default(obj)
+
+def _dumps(obj):
+    """json.dumps with datetime/ObjectId support."""
+    return json.dumps(obj, indent=2, ensure_ascii=False, cls=_DatetimeEncoder)
+
+
 def is_valid_objectid(id_string):
     """Check if string is a valid ObjectId"""
     try:
@@ -170,7 +184,7 @@ def parse_structured_content_for_pdf(content, styles):
             # Generic dictionary rendering
             flowables.extend(_render_generic_dict(content, styles))
     
-    return flowables if flowables else [Paragraph(json.dumps(content, indent=2), styles['Normal'])]
+    return flowables if flowables else [Paragraph(_dumps(content), styles['Normal'])]
 
 def _render_summary_structure(summary, styles):
     """Render summary JSON structure beautifully"""
@@ -601,7 +615,7 @@ def _render_generic_dict(data, styles):
         flowables.append(Paragraph(key.replace('_', ' ').title() + ':', key_style))
         
         if isinstance(value, (list, dict)):
-            value_text = json.dumps(value, indent=2)
+            value_text = _dumps(value)
         else:
             value_text = str(value)
         
@@ -760,7 +774,7 @@ def generate_json_report(meeting, transcript, summary, knowledge_graph):
         'generated_at': datetime.utcnow().isoformat()
     }
     
-    json_str = json.dumps(report_data, indent=2, ensure_ascii=False)
+    json_str = _dumps(report_data)
     buffer = io.BytesIO(json_str.encode('utf-8'))
     
     return send_file(
@@ -993,7 +1007,7 @@ def _export_bulk_json(meetings_data):
         'meetings': meetings_data
     }
     
-    json_str = json.dumps(export_data, indent=2, ensure_ascii=False)
+    json_str = _dumps(export_data)
     buffer = io.BytesIO(json_str.encode('utf-8'))
     
     return send_file(
@@ -1050,7 +1064,7 @@ def _export_bulk_zip(meetings_data, format_type):
             
             if format_type == 'json':
                 filename = f"{meeting_id}.json"
-                content = json.dumps(meeting_data, indent=2, ensure_ascii=False)
+                content = _dumps(meeting_data)
                 zip_file.writestr(filename, content.encode('utf-8'))
                 
             elif format_type == 'txt':
@@ -1488,7 +1502,7 @@ def generate_comprehensive_json(meeting, transcript, summary, minutes, insights,
         'generated_at': datetime.utcnow().isoformat()
     }
     
-    json_str = json.dumps(report_data, indent=2, ensure_ascii=False)
+    json_str = _dumps(report_data)
     buffer = io.BytesIO(json_str.encode('utf-8'))
     
     return send_file(
@@ -1517,19 +1531,19 @@ def generate_comprehensive_txt(meeting, transcript, summary, minutes, insights, 
         "MEETING SUMMARY",
         "=" * 80,
         "",
-        summary if isinstance(summary, str) else json.dumps(summary, indent=2),
+        summary if isinstance(summary, str) else _dumps(summary),
         "",
         "=" * 80,
         "MINUTES OF MEETING",
         "=" * 80,
         "",
-        minutes if isinstance(minutes, str) else json.dumps(minutes, indent=2),
+        minutes if isinstance(minutes, str) else _dumps(minutes),
         "",
         "=" * 80,
         "MEETING INSIGHTS",
         "=" * 80,
         "",
-        insights if isinstance(insights, str) else json.dumps(insights, indent=2),
+        insights if isinstance(insights, str) else _dumps(insights),
         "",
         "=" * 80,
         "FULL TRANSCRIPT",
@@ -1680,7 +1694,7 @@ def generate_specific_json(meeting, content_type, content, content_data):
         'generated_at': datetime.utcnow().isoformat()
     }
 
-    json_str = json.dumps(report_data, indent=2, ensure_ascii=False)
+    json_str = _dumps(report_data)
     buffer = io.BytesIO(json_str.encode('utf-8'))
 
     return send_file(
@@ -1711,7 +1725,7 @@ def generate_specific_txt(meeting, content_type, content, content_data):
         title_text,
         "=" * 80,
         "",
-        content if isinstance(content, str) else json.dumps(content, indent=2),
+        content if isinstance(content, str) else _dumps(content),
         "",
     ]
 
