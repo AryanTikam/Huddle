@@ -183,7 +183,7 @@ const JoinMeeting = ({ roomId, onJoin, onBack }) => {
           <span>Back</span>
         </button>
 
-        <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-8 shadow-2xl">
+        <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800/50 rounded-2xl p-5 sm:p-8 shadow-2xl">
           {/* Room info */}
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-500/20">
@@ -192,7 +192,7 @@ const JoinMeeting = ({ roomId, onJoin, onBack }) => {
             <h1 className="text-2xl font-bold text-white mb-3">
               {roomInfo?.title || `Room ${roomId}`}
             </h1>
-            <div className="flex items-center justify-center gap-6 text-gray-400 text-sm">
+            <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-gray-400 text-sm">
               <div className="flex items-center gap-1.5">
                 <User className="w-4 h-4" />
                 <span>{roomInfo?.host_name}</span>
@@ -228,7 +228,7 @@ const JoinMeeting = ({ roomId, onJoin, onBack }) => {
               </div>
 
               {/* Media preview */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Camera Preview */}
                 <div className="relative bg-gray-800/60 rounded-xl overflow-hidden border border-gray-700/30">
                   <div className="aspect-video bg-gray-900 flex items-center justify-center">

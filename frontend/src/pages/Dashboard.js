@@ -77,15 +77,15 @@ const Dashboard = ({ onNavigate, onMeetingClick, onJoinRoom }) => {
   }, [makeAuthenticatedRequest]);
 
   return (
-    <div className="p-6 space-y-8 animate-fade-in">
+    <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 animate-fade-in">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-2xl p-8 text-white">
+      <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-2xl p-5 sm:p-8 text-white">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-3xl font-bold mb-2">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-2">
               Welcome back! 👋
             </h2>
-            <p className="text-blue-100 text-lg">
+            <p className="text-blue-100 text-base sm:text-lg">
               Here's what's happening with your meetings today.
             </p>
           </div>
@@ -182,7 +182,7 @@ const Dashboard = ({ onNavigate, onMeetingClick, onJoinRoom }) => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {stats.map((stat, index) => (
           <div
             key={index}
@@ -209,7 +209,7 @@ const Dashboard = ({ onNavigate, onMeetingClick, onJoinRoom }) => {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
         {/* Recent Activity */}
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">

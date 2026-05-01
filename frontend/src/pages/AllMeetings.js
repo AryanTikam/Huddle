@@ -745,33 +745,33 @@ const AllMeetings = ({ onMeetingClick }) => {
   };
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
             All Meetings
           </h2>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
             Manage and explore your recorded meetings.
           </p>
         </div>
 
-        <div className="flex items-center space-x-3">
-          {/* Select All button - fixed dark theme visibility */}
+        <div className="flex items-center space-x-2 sm:space-x-3 flex-wrap gap-y-2">
+          {/* Select All button */}
           <button
             onClick={toggleSelectAll}
-            className="flex items-center space-x-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+            className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
           >
             {selectAll ? (
               <CheckSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             ) : (
               <Square className="w-4 h-4 text-gray-600 dark:text-gray-400" />
             )}
-            <span className="text-sm text-gray-700 dark:text-gray-300">Select All</span>
+            <span className="text-sm text-gray-700 dark:text-gray-300 hidden sm:inline">Select All</span>
           </button>
 
-          {/* View Mode Toggle - fixed dark theme visibility */}
+          {/* View Mode Toggle */}
           <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
             <button
               onClick={() => setViewMode('grid')}
@@ -797,16 +797,16 @@ const AllMeetings = ({ onMeetingClick }) => {
 
           <button
             onClick={() => setShowCreateFolder(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+            className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
           >
             <Plus className="w-4 h-4" />
-            <span>New Folder</span>
+            <span className="hidden sm:inline">New Folder</span>
           </button>
         </div>
       </div>
 
       {/* Search and Filter Controls */}
-      <div className="flex flex-col lg:flex-row gap-4">
+      <div className="flex flex-col gap-3 sm:gap-4">
         {/* Search */}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -819,51 +819,53 @@ const AllMeetings = ({ onMeetingClick }) => {
           />
         </div>
 
-        {/* Folder Filter */}
-        <select
-          value={selectedFolder}
-          onChange={(e) => handleFolderChange(e.target.value)}
-          className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        >
-          <option value="all">All Folders</option>
-          {folders.map(folder => (
-            <option key={folder.id} value={folder.id}>
-              {folder.name} ({folder.meeting_count || 0})
-            </option>
-          ))}
-        </select>
-
-        {/* Sort Controls */}
-        <div className="flex space-x-2">
+        <div className="flex flex-col sm:flex-row gap-3">
+          {/* Folder Filter */}
           <select
-            value={sortBy}
-            onChange={(e) => handleSortChange(e.target.value)}
-            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            value={selectedFolder}
+            onChange={(e) => handleFolderChange(e.target.value)}
+            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent flex-1 sm:flex-none"
           >
-            <option value="created_at">Date Created</option>
-            <option value="title">Title</option>
-            <option value="status">Status</option>
-            <option value="folder_color">Folder Color</option>
+            <option value="all">All Folders</option>
+            {folders.map(folder => (
+              <option key={folder.id} value={folder.id}>
+                {folder.name} ({folder.meeting_count || 0})
+              </option>
+            ))}
           </select>
-          
-          {/* Sort order button - fixed dark theme visibility */}
-          <button
-            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-            className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-          >
-            {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
-          </button>
+
+          {/* Sort Controls */}
+          <div className="flex space-x-2">
+            <select
+              value={sortBy}
+              onChange={(e) => handleSortChange(e.target.value)}
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent flex-1 sm:flex-none"
+            >
+              <option value="created_at">Date Created</option>
+              <option value="title">Title</option>
+              <option value="status">Status</option>
+              <option value="folder_color">Folder Color</option>
+            </select>
+            
+            {/* Sort order button */}
+            <button
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+            >
+              {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Bulk Actions Bar */}
       {showBulkActions && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 animate-slide-up">
-          <div className="flex items-center justify-between">
-            <span className="text-blue-700 dark:text-blue-300">
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4 animate-slide-up">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <span className="text-blue-700 dark:text-blue-300 text-sm">
               {selectedMeetings.length} meeting(s) selected
             </span>
-            <div className="flex space-x-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setShowMoveDialog(true)}
                 className="flex items-center space-x-2 px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm transition-colors"

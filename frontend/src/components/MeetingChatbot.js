@@ -209,17 +209,17 @@ const MeetingChatbot = ({ meetingId }) => {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm h-full flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+      <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
               <Bot className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
                 AI Assistant
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                 Ask questions about this meeting
               </p>
             </div>
@@ -246,7 +246,7 @@ const MeetingChatbot = ({ meetingId }) => {
 
       {/* Suggestions */}
       {messages.length === 0 && suggestions.length > 0 && (
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-2 mb-3">
             <Lightbulb className="w-4 h-4 text-yellow-500" />
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -268,10 +268,10 @@ const MeetingChatbot = ({ meetingId }) => {
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
         {messages.length === 0 ? (
-          <div className="text-center py-12">
-            <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <div className="text-center py-8 sm:py-12">
+            <MessageSquare className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               Start a Conversation
             </h3>
@@ -294,7 +294,7 @@ const MeetingChatbot = ({ meetingId }) => {
               )}
               
               <div
-                className={`max-w-md rounded-2xl group relative ${
+                className={`max-w-[85%] sm:max-w-md rounded-2xl group relative ${
                   message.type === 'user'
                     ? 'bg-blue-500 text-white p-4'
                     : message.isError
@@ -372,8 +372,8 @@ const MeetingChatbot = ({ meetingId }) => {
       </div>
 
       {/* Input */}
-      <div className="p-6 border-t border-gray-200 dark:border-gray-700">
-        <div className="flex items-end space-x-3">
+      <div className="p-3 sm:p-6 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex items-end space-x-2 sm:space-x-3">
           <div className="flex-1">
             <textarea
               value={inputValue}

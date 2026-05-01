@@ -35,6 +35,7 @@ const AppContent = () => {
   const [isHost, setIsHost] = useState(false);
   const [showLanding, setShowLanding] = useState(!isExtension); // Skip landing in extension
   const [sidebarOpen, setSidebarOpen] = useState(false); // For extension sidebar toggle
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false); // For mobile sidebar toggle
   const { user, loading, isAuthenticated } = useAuth();
 
   useEffect(() => {
@@ -194,16 +195,44 @@ const AppContent = () => {
 
   return (
     <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors ${isExtension ? 'extension-mode' : ''}`}>
-      <Header onToggleSidebar={isExtension ? () => setSidebarOpen(!sidebarOpen) : undefined} isExtension={isExtension} onNavigate={setActiveView} />
+      <Header 
+        onToggleSidebar={isExtension ? () => setSidebarOpen(!sidebarOpen) : undefined} 
+        onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+        isExtension={isExtension} 
+        onNavigate={(view) => { setActiveView(view); setMobileSidebarOpen(false); }} 
+      />
       <div className="flex h-screen">
         {!['webrtc-meeting', 'join-meeting'].includes(activeView) && (
           <>
-            <div className={isExtension ? `sidebar-container ${sidebarOpen ? 'sidebar-open' : ''}` : ''}>
+            {/* Desktop sidebar - hidden on mobile */}
+            <div className={`hidden md:block ${isExtension ? `sidebar-container ${sidebarOpen ? 'sidebar-open' : ''}` : ''}`}>
               <Sidebar 
                 activeView={activeView} 
                 setActiveView={(view) => { setActiveView(view); if (isExtension) setSidebarOpen(false); }}
                 onMeetingClick={(id, tab) => { handleMeetingClick(id, tab); if (isExtension) setSidebarOpen(false); }}
               />
+            </div>
+            {/* Mobile sidebar overlay */}
+            <div 
+              className={`fixed inset-0 z-40 md:hidden transition-opacity duration-300 ${
+                mobileSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+              }`}
+            >
+              <div 
+                className="absolute inset-0 bg-black/50" 
+                onClick={() => setMobileSidebarOpen(false)} 
+              />
+              <div 
+                className={`absolute left-0 top-16 bottom-0 w-72 transform transition-transform duration-300 ease-in-out ${
+                  mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                }`}
+              >
+                <Sidebar 
+                  activeView={activeView} 
+                  setActiveView={(view) => { setActiveView(view); setMobileSidebarOpen(false); }}
+                  onMeetingClick={(id, tab) => { handleMeetingClick(id, tab); setMobileSidebarOpen(false); }}
+                />
+              </div>
             </div>
             {isExtension && sidebarOpen && (
               <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
@@ -211,7 +240,7 @@ const AppContent = () => {
           </>
         )}
         <main className={`flex-1 overflow-y-auto ${
-          ['webrtc-meeting', 'join-meeting'].includes(activeView) ? '' : 'pt-20'
+          ['webrtc-meeting', 'join-meeting'].includes(activeView) ? '' : 'pt-16 md:pt-20'
         }`}>
           {renderContent()}
         </main>

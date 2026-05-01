@@ -1042,7 +1042,7 @@ const WebRTCMeeting = ({ roomId, onLeave, isHost = false, meetingData = null }) 
 
         {/* ── Side Panel (Participants / Transcript) ── */}
         {(showParticipants || showTranscript) && (
-          <div className="w-80 bg-gray-900/80 backdrop-blur-xl border-l border-gray-800/50 flex flex-col">
+          <div className="w-full sm:w-80 bg-gray-900/80 backdrop-blur-xl border-l border-gray-800/50 flex flex-col absolute sm:relative inset-0 sm:inset-auto z-10 sm:z-auto">
             {/* Panel Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-800/50">
               <h3 className="font-semibold text-white">
@@ -1194,7 +1194,7 @@ const WebRTCMeeting = ({ roomId, onLeave, isHost = false, meetingData = null }) 
           <div className="w-px h-8 bg-gray-700/50 mx-1" />
 
           {/* Reactions */}
-          <div className="flex gap-1">
+          <div className="hidden sm:flex gap-1">
             {['👍', '👏', '❤️', '😂'].map(emoji => (
               <button key={emoji} onClick={() => sendReaction(emoji)}
                 className="p-2 hover:bg-gray-700/60 rounded-xl transition-all hover:scale-110 text-lg">

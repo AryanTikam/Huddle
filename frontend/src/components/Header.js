@@ -3,7 +3,7 @@ import { Settings, Moon, Sun, Brain, Bell, User, LogOut, Edit, Menu } from 'luci
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 
-const Header = ({ onToggleSidebar, isExtension, onNavigate }) => {
+const Header = ({ onToggleSidebar, onToggleMobileSidebar, isExtension, onNavigate }) => {
   const { isDarkMode, toggleTheme } = useTheme();
   const { user, logout, makeAuthenticatedRequest } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -106,24 +106,33 @@ const Header = ({ onToggleSidebar, isExtension, onNavigate }) => {
 
   return (
     <>
-      <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-700 px-6 py-4 sticky top-0 z-50">
+      <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-700 px-3 sm:px-6 py-3 sm:py-4 sticky top-0 z-50">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-3 sm:space-x-6">
+            {/* Mobile hamburger menu - always show on mobile */}
+            <button
+              onClick={onToggleMobileSidebar}
+              className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              title="Toggle Sidebar"
+            >
+              <Menu className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+            </button>
+            {/* Extension sidebar toggle - only show in extension on desktop */}
             {isExtension && onToggleSidebar && (
               <button
                 onClick={onToggleSidebar}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                className="hidden md:block p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 title="Toggle Sidebar"
               >
                 <Menu className="w-5 h-5 text-gray-600 dark:text-gray-300" />
               </button>
             )}
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Brain className="w-6 h-6 text-white" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Brain className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
                   Huddle
                 </h1>
                 <span className="text-xs text-gray-500 dark:text-gray-400 hidden md:block">
@@ -133,7 +142,7 @@ const Header = ({ onToggleSidebar, isExtension, onNavigate }) => {
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-3">
             {/* Notifications */}
             <div className="relative">
               <button
@@ -145,7 +154,7 @@ const Header = ({ onToggleSidebar, isExtension, onNavigate }) => {
               </button>
               
               {showNotifications && (
-                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 animate-slide-up">
+                <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 animate-slide-up">
                   <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Notifications</h3>
                   <div className="space-y-3">
                     <div className="flex items-start space-x-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg">
@@ -172,10 +181,10 @@ const Header = ({ onToggleSidebar, isExtension, onNavigate }) => {
               )}
             </button>
 
-            {/* Settings */}
+            {/* Settings - hidden on very small screens */}
             <button 
               onClick={() => onNavigate && onNavigate('settings')}
-              className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 transform hover:scale-105"
+              className="hidden sm:block p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 transform hover:scale-105"
               title="AI Settings"
             >
               <Settings className="w-5 h-5 text-gray-600 dark:text-gray-400" />

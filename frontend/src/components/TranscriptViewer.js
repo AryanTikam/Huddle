@@ -298,8 +298,8 @@ const TranscriptViewer = ({ transcript, meetingId }) => {
 
   if (!transcript) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 text-center">
-        <Mic className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 sm:p-12 text-center">
+        <Mic className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
           No Transcript Available
         </h3>
@@ -313,10 +313,10 @@ const TranscriptViewer = ({ transcript, meetingId }) => {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
       {/* Header with controls */}
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-1 sm:mb-2">
               Meeting Transcript
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -325,11 +325,11 @@ const TranscriptViewer = ({ transcript, meetingId }) => {
           </div>
 
           {/* Controls */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-3">
             {/* Global TTS Button */}
             <button
               onClick={playGlobalTTS}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
                 isGlobalTTSPlaying
                   ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50'
                   : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50'
@@ -339,12 +339,12 @@ const TranscriptViewer = ({ transcript, meetingId }) => {
               {isGlobalTTSPlaying ? (
                 <>
                   <Square className="w-4 h-4" />
-                  <span className="text-sm">Stop</span>
+                  <span className="text-sm hidden sm:inline">Stop</span>
                 </>
               ) : (
                 <>
                   <Volume2 className="w-4 h-4" />
-                  <span className="text-sm">Listen</span>
+                  <span className="text-sm hidden sm:inline">Listen</span>
                 </>
               )}
             </button>
@@ -352,16 +352,16 @@ const TranscriptViewer = ({ transcript, meetingId }) => {
             {/* Copy Button */}
             <button
               onClick={handleCopyTranscript}
-              className="flex items-center space-x-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors"
+              className="flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors text-sm"
             >
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              <span className="text-sm">{copied ? 'Copied!' : 'Copy'}</span>
+              <span className="text-sm hidden sm:inline">{copied ? 'Copied!' : 'Copy'}</span>
             </button>
           </div>
         </div>
 
         {/* Search and Filter Controls */}
-        <div className="flex flex-col md:flex-row gap-4 mt-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
@@ -389,85 +389,91 @@ const TranscriptViewer = ({ transcript, meetingId }) => {
       </div>
 
       {/* Transcript Content */}
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {filteredSegments.length > 0 ? (
-          <div ref={transcriptRef} className="space-y-4 max-h-96 overflow-y-auto">
+          <div ref={transcriptRef} className="space-y-3 sm:space-y-4 max-h-96 overflow-y-auto">
             {filteredSegments.map((segment) => (
               <div
                 key={segment.id}
-                className={`flex items-start space-x-4 p-4 rounded-lg transition-all duration-200 group ${
+                className={`p-3 sm:p-4 rounded-lg transition-all duration-200 group ${
                   currentTTSSegment === segment.id
                     ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'
                     : 'hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}
               >
-                {/* Timestamp */}
-                <div className="flex-shrink-0 w-20">
-                  <div className="flex items-center space-x-1 text-xs text-gray-500 dark:text-gray-400">
-                    <Clock className="w-3 h-3" />
-                    <span>{formatTimestamp(segment.timestamp)}</span>
-                  </div>
-                </div>
-
-                {/* Speaker */}
-                <div className="flex-shrink-0 w-32">
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getSpeakerColor(segment.speaker)}`}>
-                    <User className="w-3 h-3 mr-1" />
-                    {segment.speaker}
-                  </span>
-                </div>
-
-                {/* Text Content */}
-                <div className="flex-1">
-                  <p 
-                    className="text-gray-900 dark:text-white leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: highlightSearchTerm(segment.text) }}
-                  />
-                  
-                  {/* Confidence indicator */}
-                  <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="flex items-center space-x-2">
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        Confidence: {(segment.confidence * 100).toFixed(0)}%
+                {/* Mobile: stacked layout | Desktop: horizontal layout */}
+                <div className="flex flex-col sm:flex-row sm:items-start sm:space-x-4">
+                  {/* Timestamp & Speaker row on mobile */}
+                  <div className="flex items-center space-x-2 sm:space-x-0 sm:flex-col sm:items-start mb-2 sm:mb-0">
+                    {/* Timestamp */}
+                    <div className="flex-shrink-0 sm:w-20">
+                      <div className="flex items-center space-x-1 text-xs text-gray-500 dark:text-gray-400">
+                        <Clock className="w-3 h-3" />
+                        <span>{formatTimestamp(segment.timestamp)}</span>
                       </div>
-                      <div className="flex-1 bg-gray-200 dark:bg-gray-600 rounded-full h-1">
-                        <div 
-                          className="bg-green-500 h-1 rounded-full transition-all duration-300"
-                          style={{ width: `${segment.confidence * 100}%` }}
-                        />
+                    </div>
+
+                    {/* Speaker */}
+                    <div className="flex-shrink-0 sm:w-32 sm:mt-1">
+                      <span className={`inline-flex items-center px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${getSpeakerColor(segment.speaker)}`}>
+                        <User className="w-3 h-3 mr-1" />
+                        {segment.speaker}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Text Content */}
+                  <div className="flex-1 min-w-0">
+                    <p 
+                      className="text-gray-900 dark:text-white leading-relaxed text-sm sm:text-base break-words"
+                      dangerouslySetInnerHTML={{ __html: highlightSearchTerm(segment.text) }}
+                    />
+                    
+                    {/* Confidence indicator */}
+                    <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center space-x-2">
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          Confidence: {(segment.confidence * 100).toFixed(0)}%
+                        </div>
+                        <div className="flex-1 bg-gray-200 dark:bg-gray-600 rounded-full h-1">
+                          <div 
+                            className="bg-green-500 h-1 rounded-full transition-all duration-300"
+                            style={{ width: `${segment.confidence * 100}%` }}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Action buttons */}
-                <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button 
-                    onClick={() => playTTSSegment(segment.text, segment.id)}
-                    className={`p-1 rounded transition-colors ${
-                      currentTTSSegment === segment.id && isTTSPlaying
-                        ? 'text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300'
-                        : 'text-gray-400 hover:text-blue-600 dark:hover:text-blue-400'
-                    }`}
-                    title={
-                      currentTTSSegment === segment.id && isTTSPlaying
-                        ? 'Stop playing'
-                        : 'Play this segment'
-                    }
-                  >
-                    {currentTTSSegment === segment.id && isTTSPlaying ? (
-                      <Square className="w-4 h-4" />
-                    ) : (
-                      <Play className="w-4 h-4" />
-                    )}
-                  </button>
+                  {/* Action buttons */}
+                  <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block">
+                    <button 
+                      onClick={() => playTTSSegment(segment.text, segment.id)}
+                      className={`p-1 rounded transition-colors ${
+                        currentTTSSegment === segment.id && isTTSPlaying
+                          ? 'text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300'
+                          : 'text-gray-400 hover:text-blue-600 dark:hover:text-blue-400'
+                      }`}
+                      title={
+                        currentTTSSegment === segment.id && isTTSPlaying
+                          ? 'Stop playing'
+                          : 'Play this segment'
+                      }
+                    >
+                      {currentTTSSegment === segment.id && isTTSPlaying ? (
+                        <Square className="w-4 h-4" />
+                      ) : (
+                        <Play className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-12">
-            <Search className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <div className="text-center py-8 sm:py-12">
+            <Search className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               No Results Found
             </h3>
@@ -479,8 +485,8 @@ const TranscriptViewer = ({ transcript, meetingId }) => {
       </div>
 
       {/* Summary footer */}
-      <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700 rounded-b-2xl border-t border-gray-200 dark:border-gray-600">
-        <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
+      <div className="px-4 sm:px-6 py-3 sm:py-4 bg-gray-50 dark:bg-gray-700 rounded-b-2xl border-t border-gray-200 dark:border-gray-600">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-sm text-gray-600 dark:text-gray-400 gap-1">
           <span>
             Showing {filteredSegments.length} of {transcriptSegments.length} segments
           </span>

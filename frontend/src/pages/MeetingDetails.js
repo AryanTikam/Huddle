@@ -346,10 +346,10 @@ const MeetingDetails = ({ meetingId, activeTab, onBack, onTabChange }) => {
   };
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
           <button
             onClick={onBack}
             className="flex items-center space-x-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -358,12 +358,12 @@ const MeetingDetails = ({ meetingId, activeTab, onBack, onTabChange }) => {
             <span>Back to Meetings</span>
           </button>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-3 overflow-x-auto">
             {/* Export All - New comprehensive dropdown */}
-            <div className="relative group">
-              <button className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-lg transition-colors shadow-md">
+            <div className="relative group flex-shrink-0">
+              <button className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-lg transition-colors shadow-md text-sm">
                 <Download className="w-4 h-4" />
-                <span>Export Complete Report</span>
+                <span className="hidden sm:inline">Export Report</span>
               </button>
               
               <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
@@ -395,26 +395,26 @@ const MeetingDetails = ({ meetingId, activeTab, onBack, onTabChange }) => {
 
             <button
               onClick={handleShare}
-              className="flex items-center space-x-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+              className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors flex-shrink-0 text-sm"
             >
               {copied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
-              <span>{copied ? 'Copied!' : 'Share'}</span>
+              <span className="hidden sm:inline">{copied ? 'Copied!' : 'Share'}</span>
             </button>
 
             <button
               onClick={() => setEditing(!editing)}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 rounded-lg transition-colors"
+              className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 rounded-lg transition-colors flex-shrink-0 text-sm"
             >
               <Edit className="w-4 h-4" />
-              <span>Edit</span>
+              <span className="hidden sm:inline">Edit</span>
             </button>
 
             <button
               onClick={handleDeleteMeeting}
-              className="flex items-center space-x-2 px-4 py-2 bg-red-100 dark:bg-red-900 hover:bg-red-200 dark:bg-red-800 text-red-700 dark:text-red-300 rounded-lg transition-colors"
+              className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-red-100 dark:bg-red-900 hover:bg-red-200 dark:bg-red-800 text-red-700 dark:text-red-300 rounded-lg transition-colors flex-shrink-0 text-sm"
             >
               <Trash2 className="w-4 h-4" />
-              <span>Delete</span>
+              <span className="hidden sm:inline">Delete</span>
             </button>
           </div>
         </div>
@@ -478,11 +478,11 @@ const MeetingDetails = ({ meetingId, activeTab, onBack, onTabChange }) => {
           </div>
         ) : (
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-4">
               {meeting.title || 'Untitled Meeting'}
             </h1>
             
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-6">
               <div className="flex items-center space-x-3">
                 <Calendar className="w-5 h-5 text-gray-400" />
                 <div>
@@ -543,26 +543,27 @@ const MeetingDetails = ({ meetingId, activeTab, onBack, onTabChange }) => {
       {/* Tabs */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
         <div className="border-b border-gray-200 dark:border-gray-700">
-          <div className="flex space-x-1 p-1">
+          <div className="flex space-x-1 p-1 overflow-x-auto scrollbar-hide">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => onTabChange(tab.id)}
-                className={`flex items-center space-x-2 px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
+                className={`flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-medium transition-all duration-200 whitespace-nowrap text-sm sm:text-base flex-shrink-0 ${
                   activeTab === tab.id
                     ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}
               >
-                <tab.icon className="w-5 h-5" />
-                <span>{tab.label}</span>
+                <tab.icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
               </button>
             ))}
           </div>
         </div>
 
         {/* Tab Content */}
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {renderContent()}
         </div>
       </div>
@@ -728,8 +729,8 @@ const SummaryView = ({ summary, meetingId }) => {
 
   if (!generatedSummary && !isGenerating && !error) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 text-center">
-        <Brain className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 sm:p-12 text-center">
+        <Brain className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
           No Summary Available
         </h3>
@@ -748,7 +749,7 @@ const SummaryView = ({ summary, meetingId }) => {
 
   if (isGenerating) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 text-center">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 sm:p-12 text-center">
         <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
           Generating Summary...
@@ -762,7 +763,7 @@ const SummaryView = ({ summary, meetingId }) => {
 
   if (error) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 text-center">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 sm:p-12 text-center">
         <div className="w-16 h-16 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto mb-4">
           <X className="w-8 h-8 text-red-600 dark:text-red-400" />
         </div>
@@ -787,14 +788,14 @@ const SummaryView = ({ summary, meetingId }) => {
     return (
       <div className="space-y-6">
         {/* Header */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Meeting Summary</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Meeting Summary</h3>
             <div className="flex items-center space-x-2">
               <div className="relative group">
-                <button className="flex items-center space-x-2 px-4 py-2 bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800 text-green-700 dark:text-green-300 rounded-lg transition-colors">
+                <button className="flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800 text-green-700 dark:text-green-300 rounded-lg transition-colors text-sm">
                   <FileDown className="w-4 h-4" />
-                  <span>Export Summary</span>
+                  <span className="hidden sm:inline">Export Summary</span>
                 </button>
                 <div className="absolute right-0 top-full mt-2 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
                   <div className="p-2">
@@ -822,41 +823,41 @@ const SummaryView = ({ summary, meetingId }) => {
               <button
                 onClick={generateSummary}
                 disabled={isGenerating}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 rounded-lg transition-colors disabled:opacity-50"
+                className="flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 rounded-lg transition-colors disabled:opacity-50 text-sm"
               >
                 <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
-                <span>Regenerate</span>
+                <span className="hidden sm:inline">Regenerate</span>
               </button>
             </div>
           </div>
 
           {/* Metrics */}
           {generatedSummary.metrics && (
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 text-center">
-                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 sm:p-4 text-center">
+                <div className="text-xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">
                   {generatedSummary.metrics.total_topics || 0}
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Topics Discussed</div>
+                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Topics</div>
               </div>
-              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 text-center">
-                <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 sm:p-4 text-center">
+                <div className="text-xl sm:text-3xl font-bold text-green-600 dark:text-green-400">
                   {generatedSummary.metrics.decisions_made || 0}
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Decisions Made</div>
+                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Decisions</div>
               </div>
-              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 text-center">
-                <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
+              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 sm:p-4 text-center">
+                <div className="text-xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400">
                   {generatedSummary.metrics.action_items || 0}
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Action Items</div>
+                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Actions</div>
               </div>
             </div>
           )}
 
           {/* Executive Summary */}
           {generatedSummary.executive_summary && (
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-6 border-l-4 border-blue-500">
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-4 sm:p-6 border-l-4 border-blue-500">
               <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Executive Summary</h4>
               <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                 {generatedSummary.executive_summary}
@@ -933,7 +934,7 @@ const SummaryView = ({ summary, meetingId }) => {
                       {item.priority}
                     </span>
                   </div>
-                  <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                  <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-sm text-gray-600 dark:text-gray-400">
                     <span className="flex items-center">
                       <Users className="w-4 h-4 mr-1" />
                       {item.owner}
@@ -1053,8 +1054,8 @@ const MinutesView = ({ minutes, meetingId }) => {
 
   if (!generatedMinutes && !isGenerating && !error) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 text-center">
-        <ClipboardList className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 sm:p-12 text-center">
+        <ClipboardList className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
           No Minutes Available
         </h3>
@@ -1073,7 +1074,7 @@ const MinutesView = ({ minutes, meetingId }) => {
 
   if (isGenerating) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 text-center">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 sm:p-12 text-center">
         <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
           Generating Minutes...
@@ -1087,7 +1088,7 @@ const MinutesView = ({ minutes, meetingId }) => {
 
   if (error) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 text-center">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 sm:p-12 text-center">
         <div className="w-16 h-16 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto mb-4">
           <X className="w-8 h-8 text-red-600 dark:text-red-400" />
         </div>
@@ -1111,14 +1112,14 @@ const MinutesView = ({ minutes, meetingId }) => {
     return (
       <div className="space-y-6">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-3xl font-bold">Minutes of Meeting</h3>
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-4 sm:p-6 text-white shadow-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <h3 className="text-2xl sm:text-3xl font-bold">Minutes of Meeting</h3>
             <div className="flex items-center space-x-2">
               <div className="relative group">
-                <button className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors">
+                <button className="flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-sm">
                   <FileDown className="w-4 h-4" />
-                  <span>Export Minutes</span>
+                  <span className="hidden sm:inline">Export Minutes</span>
                 </button>
                 <div className="absolute right-0 top-full mt-2 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
                   <div className="p-2">
@@ -1146,10 +1147,10 @@ const MinutesView = ({ minutes, meetingId }) => {
               <button
                 onClick={generateMinutes}
                 disabled={isGenerating}
-                className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors disabled:opacity-50"
+                className="flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors disabled:opacity-50 text-sm"
               >
                 <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
-                <span>Regenerate</span>
+                <span className="hidden sm:inline">Regenerate</span>
               </button>
             </div>
           </div>
@@ -1276,7 +1277,7 @@ const MinutesView = ({ minutes, meetingId }) => {
                 <div key={index} className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border-l-4 border-green-500">
                   <p className="font-semibold text-gray-900 dark:text-white mb-2">{decision.decision}</p>
                   <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">{decision.rationale}</p>
-                  <div className="flex items-center space-x-4 text-xs text-gray-600 dark:text-gray-400">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-gray-600 dark:text-gray-400">
                     {decision.decision_maker && <span>👤 {decision.decision_maker}</span>}
                     {decision.affected_parties && decision.affected_parties.length > 0 && (
                       <span>📋 Affects: {decision.affected_parties.join(', ')}</span>
@@ -1308,7 +1309,7 @@ const MinutesView = ({ minutes, meetingId }) => {
                       {item.priority}
                     </span>
                   </div>
-                  <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-gray-600 dark:text-gray-400">
                     <span>👤 {item.assignee}</span>
                     <span>📅 {item.deadline}</span>
                     <span className={`px-2 py-0.5 rounded ${
@@ -1559,8 +1560,8 @@ const InsightsView = ({ insights, meetingId }) => {
 
   if (!generatedInsights && !isGenerating && !error) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 text-center">
-        <Brain className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 sm:p-12 text-center">
+        <Brain className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
           No Insights Available
         </h3>
@@ -1579,7 +1580,7 @@ const InsightsView = ({ insights, meetingId }) => {
 
   if (isGenerating) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 text-center">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 sm:p-12 text-center">
         <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
           Generating Insights...
@@ -1593,7 +1594,7 @@ const InsightsView = ({ insights, meetingId }) => {
 
   if (error) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 text-center">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 sm:p-12 text-center">
         <div className="w-16 h-16 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto mb-4">
           <X className="w-8 h-8 text-red-600 dark:text-red-400" />
         </div>
@@ -1619,14 +1620,14 @@ const InsightsView = ({ insights, meetingId }) => {
     return (
       <div className="space-y-6">
         {/* Overview Card */}
-        <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl p-6 text-white shadow-lg">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-2xl font-bold">Meeting Insights</h3>
+        <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl p-4 sm:p-6 text-white shadow-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+            <h3 className="text-xl sm:text-2xl font-bold">Meeting Insights</h3>
             <div className="flex items-center space-x-2">
               <div className="relative group">
-                <button className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors">
+                <button className="flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-sm">
                   <FileDown className="w-4 h-4" />
-                  <span>Export Insights</span>
+                  <span className="hidden sm:inline">Export Insights</span>
                 </button>
                 <div className="absolute right-0 top-full mt-2 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
                   <div className="p-2">
@@ -1654,47 +1655,47 @@ const InsightsView = ({ insights, meetingId }) => {
               <button
                 onClick={generateInsights}
                 disabled={isGenerating}
-                className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors disabled:opacity-50"
+                className="flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors disabled:opacity-50 text-sm"
               >
                 <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
-                <span>Regenerate</span>
+                <span className="hidden sm:inline">Regenerate</span>
               </button>
             </div>
           </div>
           
           {/* Metrics */}
           {generatedInsights.metrics && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 text-center">
-                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-6">
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 sm:p-4 text-center">
+                <div className="text-xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">
                   {generatedInsights.metrics.total_topics || 0}
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Topics Discussed</div>
+                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Topics</div>
               </div>
-              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 text-center">
-                <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 sm:p-4 text-center">
+                <div className="text-xl sm:text-3xl font-bold text-green-600 dark:text-green-400">
                   {generatedInsights.metrics.decisions_made || 0}
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Decisions Made</div>
+                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Decisions</div>
               </div>
-              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 text-center">
-                <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
+              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 sm:p-4 text-center">
+                <div className="text-xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400">
                   {generatedInsights.metrics.action_items || 0}
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Action Items</div>
+                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Actions</div>
               </div>
-              <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 text-center">
-                <div className="text-3xl font-bold text-red-600 dark:text-red-400">
+              <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 sm:p-4 text-center">
+                <div className="text-xl sm:text-3xl font-bold text-red-600 dark:text-red-400">
                   {generatedInsights.metrics.risks || 0}
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Risks Identified</div>
+                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Risks</div>
               </div>
             </div>
           )}
 
           {/* Executive Summary */}
           {generatedInsights.executive_summary && (
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-6 border-l-4 border-blue-500">
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-4 sm:p-6 border-l-4 border-blue-500">
               <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Executive Summary</h4>
               <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                 {generatedInsights.executive_summary}

@@ -59,27 +59,18 @@ const Settings = ({ onNavigate }) => {
   // Fetch helpers that don't throw on non-ok
   const safeFetch = useCallback(async (url) => {
     try {
-      const response = await fetch(`${API_BASE}${url}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await makeAuthenticatedRequest(url);
       return await response.json();
     } catch (err) {
       console.error(`Fetch error for ${url}:`, err);
       return null;
     }
-  }, [token]);
+  }, [makeAuthenticatedRequest]);
 
   const safePost = useCallback(async (url, body) => {
     try {
-      const response = await fetch(`${API_BASE}${url}`, {
+      const response = await makeAuthenticatedRequest(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
         body: JSON.stringify(body)
       });
       return await response.json();
@@ -87,16 +78,12 @@ const Settings = ({ onNavigate }) => {
       console.error(`Post error for ${url}:`, err);
       return null;
     }
-  }, [token]);
+  }, [makeAuthenticatedRequest]);
 
   const safeDelete = useCallback(async (url, body) => {
     try {
-      const response = await fetch(`${API_BASE}${url}`, {
+      const response = await makeAuthenticatedRequest(url, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
         body: JSON.stringify(body)
       });
       return await response.json();
@@ -104,7 +91,7 @@ const Settings = ({ onNavigate }) => {
       console.error(`Delete error for ${url}:`, err);
       return null;
     }
-  }, [token]);
+  }, [makeAuthenticatedRequest]);
 
   // Load all settings data
   const loadSettings = useCallback(async () => {
@@ -121,7 +108,51 @@ const Settings = ({ onNavigate }) => {
       if (modeData) {
         setCurrentMode(modeData.mode || 'off-device');
         setCurrentModel(modeData.local_model || 'llama3.2');
-        setAvailableModes(modeData.available_modes || []);
+        
+        // Provide fallback modes if backend fails to return them
+        const defaultModes = [
+          {
+              id: "off-device",
+              name: "Off-Device (Cloud)",
+              description: "Uses Google Gemini API. Best quality, requires internet.",
+              icon: "cloud",
+              status: "available"
+          },
+          {
+              id: "local",
+              name: "Local (On-Device)",
+              description: "Runs AI models locally via Ollama. Privacy-focused.",
+              icon: "shield",
+              status: "available"
+          },
+          {
+              id: "hybrid",
+              name: "Hybrid (Smart Routing)",
+              description: "Automatically routes queries to local or cloud.",
+              icon: "zap",
+              status: "wip"
+          }
+        ];
+        
+        setAvailableModes(modeData.available_modes?.length > 0 ? modeData.available_modes : defaultModes);
+      } else {
+        // Full fallback if modeData entirely fails
+        setAvailableModes([
+          {
+              id: "off-device",
+              name: "Off-Device (Cloud)",
+              description: "Uses Google Gemini API. Best quality, requires internet.",
+              icon: "cloud",
+              status: "available"
+          },
+          {
+              id: "local",
+              name: "Local (On-Device)",
+              description: "Runs AI models locally via Ollama. Privacy-focused.",
+              icon: "shield",
+              status: "available"
+          }
+        ]);
       }
 
       if (ollamaData) {
@@ -411,10 +442,10 @@ const Settings = ({ onNavigate }) => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-8">
+    <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-3 sm:space-x-4">
           <button
             onClick={() => onNavigate('dashboard')}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"

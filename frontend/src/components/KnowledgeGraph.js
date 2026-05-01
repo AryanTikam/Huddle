@@ -312,7 +312,7 @@ const KnowledgeGraph = ({ graphData, onNodeClick }) => {
   // Show loading or empty state
   if (!graphData || !graphData.nodes || graphData.nodes.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-12 text-center">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 sm:p-12 text-center">
         <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center mx-auto mb-4">
           <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -330,12 +330,12 @@ const KnowledgeGraph = ({ graphData, onNodeClick }) => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden">
-      <div className={`p-6 border-b border-gray-200 dark:border-gray-700 ${
+      <div className={`p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 ${
         isDarkMode
           ? 'bg-gradient-to-r from-gray-800 to-gray-900'
           : 'bg-gradient-to-r from-gray-50 to-gray-100'
       }`}>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -343,12 +343,12 @@ const KnowledgeGraph = ({ graphData, onNodeClick }) => {
               </svg>
             </div>
             <div>
-              <h3 className={`text-xl font-semibold ${
+              <h3 className={`text-lg sm:text-xl font-semibold ${
                 isDarkMode ? 'text-gray-100' : 'text-gray-800'
               }`}>
                 Knowledge Graph
               </h3>
-              <p className={`text-sm ${
+              <p className={`text-xs sm:text-sm hidden sm:block ${
                 isDarkMode ? 'text-gray-300' : 'text-gray-600'
               }`}>
                 Interactive visualization of meeting entities and relationships
@@ -420,8 +420,8 @@ const KnowledgeGraph = ({ graphData, onNodeClick }) => {
         </div>
       </div>
 
-      <div className="p-6">
-        <div className="flex gap-6 min-h-[500px]">
+      <div className="p-3 sm:p-6">
+        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 min-h-[300px] sm:min-h-[500px]">
           <div className="flex-1 relative">
             {loading && (
               <div className="absolute inset-0 bg-gradient-to-br from-white via-gray-50 to-gray-100 dark:from-gray-800 dark:via-gray-700 dark:to-gray-600 bg-opacity-95 dark:bg-opacity-95 flex items-center justify-center z-10 rounded-lg">
@@ -441,7 +441,7 @@ const KnowledgeGraph = ({ graphData, onNodeClick }) => {
             )}
             <div 
               ref={networkRef} 
-              className="w-full h-[500px] border-2 border-gray-200 dark:border-gray-600 rounded-xl shadow-inner"
+              className="w-full h-[300px] sm:h-[500px] border-2 border-gray-200 dark:border-gray-600 rounded-xl shadow-inner"
               style={{
                 background: isDarkMode
                   ? `
@@ -465,7 +465,7 @@ const KnowledgeGraph = ({ graphData, onNodeClick }) => {
               }}
             />
             
-            <div className={`absolute top-4 right-4 rounded-lg shadow-lg border p-3 ${
+            <div className={`absolute top-4 right-4 rounded-lg shadow-lg border p-3 hidden sm:block ${
               isDarkMode
                 ? 'bg-gray-900 border-gray-700'
                 : 'bg-white border-gray-200'
@@ -492,7 +492,7 @@ const KnowledgeGraph = ({ graphData, onNodeClick }) => {
           </div>
 
           {selectedNode && (
-            <div className="w-80 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl p-4 animate-slide-up border border-gray-200 dark:border-gray-600 shadow-lg">
+            <div className="w-full sm:w-80 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl p-4 animate-slide-up border border-gray-200 dark:border-gray-600 shadow-lg">
               <div className="flex items-center space-x-3 mb-4 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
                 <div 
                   className="w-12 h-12 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg border-2"
@@ -566,7 +566,7 @@ const KnowledgeGraph = ({ graphData, onNodeClick }) => {
           )}
         </div>
 
-        <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+        <div className="mt-4 sm:mt-6 grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 pt-4 border-t border-gray-200 dark:border-gray-600">
           <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg">
             <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
               {graphData?.nodes?.length || 0}

@@ -306,7 +306,7 @@ const Sidebar = ({ activeView, setActiveView, onMeetingClick }) => {
 
   if (loading) {
     return (
-      <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4">
+      <div className="w-full md:w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4">
         <div className="space-y-4 animate-pulse">
           {[1, 2, 3].map(i => (
             <div key={i} className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
@@ -318,7 +318,7 @@ const Sidebar = ({ activeView, setActiveView, onMeetingClick }) => {
 
   return (
     <>
-      <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full">
+      <div className="w-full md:w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full">
         {/* Navigation Menu */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="space-y-1">
