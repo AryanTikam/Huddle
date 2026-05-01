@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, Pause, Play, Square, Clock, Globe, Folder, Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useSTT } from '../hooks/useSTT';
 
 const NewMeeting = ({ onMeetingCreated, onNavigate }) => {
   const [isRecording, setIsRecording] = useState(false);
@@ -21,13 +22,10 @@ const NewMeeting = ({ onMeetingCreated, onNavigate }) => {
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderColor, setNewFolderColor] = useState('#3B82F6');
 
-  // Speech Recognition refs
-  const recognitionRef = useRef(null);
+  // Audio and Stream refs
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
   const streamRef = useRef(null);
-  const finalTranscriptRef = useRef('');
-  const interimTranscriptRef = useRef('');
   
   const { makeAuthenticatedRequest } = useAuth();
 
@@ -52,19 +50,38 @@ const NewMeeting = ({ onMeetingCreated, onNavigate }) => {
     { code: 'ar-SA', name: 'Arabic' }
   ];
 
+  const { startTranscription, stopTranscription: stopHookTranscription, error: sttError } = useSTT({
+    language: selectedLanguage,
+    meetingId,
+    currentSpeaker,
+    onTranscript: (entry, { engine }) => {
+      setLiveTranscript(prev => [...prev, entry]);
+      if (engine === 'webkit' && meetingId) {
+        makeAuthenticatedRequest('/recording/process-text', {
+          method: 'POST',
+          body: JSON.stringify({
+            meeting_id: meetingId,
+            text: entry.text,
+            speaker: entry.speaker,
+            confidence: entry.confidence
+          })
+        }).catch(console.error);
+      }
+    }
+  });
+
+  useEffect(() => {
+    if (sttError) {
+      setError(sttError);
+    }
+  }, [sttError]);
+
   useEffect(() => {
     fetchFolders();
     
-    // Check for Web Speech API support
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      setError('Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.');
-    }
-    
     return () => {
       // Cleanup
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
+      stopHookTranscription();
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
@@ -123,116 +140,7 @@ const NewMeeting = ({ onMeetingCreated, onNavigate }) => {
     }
   };
 
-  const setupSpeechRecognition = () => {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      setError('Speech recognition not supported');
-      return null;
-    }
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    
-    // Enhanced configuration for better accuracy
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = selectedLanguage;
-    recognition.maxAlternatives = 3; // Get multiple alternatives for better accuracy
-    
-    let lastProcessedText = '';
-    let segmentStartTime = Date.now();
-
-    recognition.onstart = () => {
-      console.log('Speech recognition started');
-      setError('');
-    };
-
-    recognition.onresult = (event) => {
-      let interimTranscript = '';
-      let finalTranscript = '';
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        const confidence = event.results[i][0].confidence;
-        
-        if (event.results[i].isFinal) {
-          finalTranscript += transcript + ' ';
-          
-          // Only process if we have new content
-          if (transcript.trim() && transcript !== lastProcessedText) {
-            const now = Date.now();
-            const segmentDuration = (now - segmentStartTime) / 1000;
-            
-            const transcriptEntry = {
-              id: Date.now(),
-              speaker: currentSpeaker,
-              text: transcript.trim(),
-              timestamp: new Date().toLocaleTimeString(),
-              confidence: confidence || 0.9,
-              duration: segmentDuration
-            };
-
-            setLiveTranscript(prev => [...prev, transcriptEntry]);
-            
-            // Send to backend
-            if (meetingId) {
-              makeAuthenticatedRequest('/recording/process-text', {
-                method: 'POST',
-                body: JSON.stringify({
-                  meeting_id: meetingId,
-                  text: transcript.trim(),
-                  speaker: currentSpeaker,
-                  confidence: confidence || 0.9
-                })
-              }).catch(console.error);
-            }
-            
-            lastProcessedText = transcript;
-            segmentStartTime = now;
-          }
-        } else {
-          interimTranscript += transcript;
-        }
-      }
-
-      finalTranscriptRef.current += finalTranscript;
-      interimTranscriptRef.current = interimTranscript;
-    };
-
-    recognition.onerror = (event) => {
-      console.error('Speech recognition error:', event.error);
-      
-      if (event.error === 'network') {
-        setError('Network error. Please check your internet connection.');
-      } else if (event.error === 'not-allowed') {
-        setError('Microphone access denied. Please allow microphone access and try again.');
-      } else if (event.error === 'no-speech') {
-        // Don't show error for no-speech, just restart
-        console.log('No speech detected, continuing...');
-        return;
-      } else {
-        setError(`Speech recognition error: ${event.error}`);
-      }
-    };
-
-    recognition.onend = () => {
-      console.log('Speech recognition ended');
-      
-      // Auto-restart if still recording (unless there was an error)
-      if (isRecording && !error) {
-        setTimeout(() => {
-          if (recognitionRef.current && isRecording) {
-            try {
-              recognitionRef.current.start();
-            } catch (e) {
-              console.log('Recognition restart failed:', e);
-            }
-          }
-        }, 100);
-      }
-    };
-
-    return recognition;
-  };
 
   const fetchFolders = async () => {
     try {
@@ -289,13 +197,7 @@ const NewMeeting = ({ onMeetingCreated, onNavigate }) => {
       
       // Setup audio visualization
       await setupAudioContext(stream);
-      
-      // Setup speech recognition
-      recognitionRef.current = setupSpeechRecognition();
-      
-      if (!recognitionRef.current) {
-        throw new Error('Speech recognition not available');
-      }
+
       
       // Start meeting in backend
       const response = await makeAuthenticatedRequest('/recording/start', {
@@ -310,13 +212,14 @@ const NewMeeting = ({ onMeetingCreated, onNavigate }) => {
         const data = await response.json();
         setMeetingId(data.meeting_id);
         
-        // Start speech recognition
-        recognitionRef.current.start();
+        // Start speech recognition using hook
+        // Small delay to allow meetingId effect to propagate
+        setTimeout(() => {
+          startTranscription(streamRef.current);
+        }, 50);
         
         setIsRecording(true);
         setRecordingTime(0);
-        finalTranscriptRef.current = '';
-        interimTranscriptRef.current = '';
         
         console.log('Recording started successfully');
       } else {
@@ -335,27 +238,18 @@ const NewMeeting = ({ onMeetingCreated, onNavigate }) => {
   };
 
   const pauseRecording = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
+    if (!isPaused) {
+      stopHookTranscription();
+    } else {
+      startTranscription(streamRef.current);
     }
     setIsPaused(!isPaused);
-    
-    if (isPaused) {
-      // Resume
-      recognitionRef.current = setupSpeechRecognition();
-      if (recognitionRef.current) {
-        recognitionRef.current.start();
-      }
-    }
   };
 
   const stopRecording = async () => {
     try {
       // Stop speech recognition
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-        recognitionRef.current = null;
-      }
+      stopHookTranscription();
       
       // Stop audio stream
       if (streamRef.current) {

@@ -17,7 +17,8 @@ import {
   ChevronDown,
   ChevronUp,
   Info,
-  X
+  X,
+  Mic
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -50,6 +51,8 @@ const Settings = ({ onNavigate }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [modeWarning, setModeWarning] = useState('');
+  
+  const [sttMode, setSttMode] = useState(localStorage.getItem('huddle_stt_preference') || 'whisper');
 
   const token = localStorage.getItem('token');
 
@@ -186,6 +189,14 @@ const Settings = ({ onNavigate }) => {
     } finally {
       setSavingMode(false);
     }
+  };
+
+  // Set STT Mode
+  const handleSetSttMode = (mode) => {
+    setSttMode(mode);
+    localStorage.setItem('huddle_stt_preference', mode);
+    setSuccess(`Switched Speech-to-Text engine to ${mode === 'whisper' ? 'Whisper (Cloud/Local)' : 'WebKit (Browser Native)'}`);
+    setTimeout(() => setSuccess(''), 3000);
   };
 
   // Set active local model
@@ -519,6 +530,62 @@ const Settings = ({ onNavigate }) => {
               </button>
             );
           })}
+        </div>
+      </section>
+
+      {/* ─── Speech-to-Text Mode ─────────────────────────────────── */}
+      <section>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center space-x-2">
+          <Mic className="w-5 h-5" />
+          <span>Speech-to-Text Engine</span>
+        </h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <button
+            onClick={() => handleSetSttMode('whisper')}
+            className={`relative p-5 rounded-xl border-2 text-left transition-all duration-200 ${
+              sttMode === 'whisper'
+                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-lg shadow-blue-100 dark:shadow-none'
+                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800'
+            }`}
+          >
+            {sttMode === 'whisper' && (
+              <div className="absolute top-3 right-3">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center bg-blue-500">
+                  <Check className="w-4 h-4 text-white" />
+                </div>
+              </div>
+            )}
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+              Whisper (Primary)
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+              Uses the Whisper model (via backend). If unavailable, automatically falls back to WebKit.
+            </p>
+          </button>
+
+          <button
+            onClick={() => handleSetSttMode('webkit')}
+            className={`relative p-5 rounded-xl border-2 text-left transition-all duration-200 ${
+              sttMode === 'webkit'
+                ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-lg shadow-purple-100 dark:shadow-none'
+                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800'
+            }`}
+          >
+            {sttMode === 'webkit' && (
+              <div className="absolute top-3 right-3">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center bg-purple-500">
+                  <Check className="w-4 h-4 text-white" />
+                </div>
+              </div>
+            )}
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+              WebKit Only
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+              Forces the use of browser's native SpeechRecognition API. Less accurate but fully local to the browser.
+            </p>
+          </button>
         </div>
       </section>
 

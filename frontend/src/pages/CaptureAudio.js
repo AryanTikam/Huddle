@@ -5,6 +5,7 @@ import {
   CheckCircle, Settings
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useSTT } from '../hooks/useSTT';
 
 const CaptureAudio = ({ onMeetingCreated, onNavigate }) => {
   // Recording states
@@ -44,10 +45,6 @@ const CaptureAudio = ({ onMeetingCreated, onNavigate }) => {
   const animationFrameRef = useRef(null);
   const isCapturingRef = useRef(false);
   const meetingIdRef = useRef(null);
-  const transcriptionRecorderRef = useRef(null);
-  const transcriptionChunksRef = useRef([]);
-  const transcriptionTimerRef = useRef(null);
-  const isTranscribingRef = useRef(false);
   const activeStreamRef = useRef(null);
   const currentSpeakerRef = useRef('Speaker');
   
@@ -75,6 +72,23 @@ const CaptureAudio = ({ onMeetingCreated, onNavigate }) => {
     { code: 'ar-SA', name: 'Arabic' }
   ];
 
+  // Initialize useSTT hook
+  const { startTranscription, stopTranscription: stopHookTranscription, isTranscribing, error: sttError } = useSTT({
+    language: selectedLanguage,
+    meetingId: meetingIdRef.current,
+    currentSpeaker: currentSpeakerRef.current,
+    onTranscript: (entry, { engine }) => {
+      setLiveTranscript(prev => [...prev, entry]);
+    },
+    isExtension
+  });
+
+  useEffect(() => {
+    if (sttError) {
+      setError(sttError);
+    }
+  }, [sttError]);
+
   useEffect(() => {
     fetchFolders();
     return () => cleanup();
@@ -94,15 +108,7 @@ const CaptureAudio = ({ onMeetingCreated, onNavigate }) => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
-    if (transcriptionTimerRef.current) {
-      clearInterval(transcriptionTimerRef.current);
-      transcriptionTimerRef.current = null;
-    }
-    if (transcriptionRecorderRef.current && transcriptionRecorderRef.current.state !== 'inactive') {
-      try { transcriptionRecorderRef.current.stop(); } catch (e) {}
-      transcriptionRecorderRef.current = null;
-    }
-    transcriptionChunksRef.current = [];
+    stopHookTranscription();
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       try { mediaRecorderRef.current.stop(); } catch (e) {}
     }
@@ -361,135 +367,6 @@ const CaptureAudio = ({ onMeetingCreated, onNavigate }) => {
   };
 
   // ============================================
-  // SERVER-SIDE TRANSCRIPTION (replaces Web Speech API)
-  // Uses a dedicated MediaRecorder that restarts every cycle
-  // so each audio blob is a complete, valid WebM file with headers.
-  // ============================================
-
-  const sendBlobForTranscription = async (blob) => {
-    if (!meetingIdRef.current || !isCapturingRef.current) {
-      console.log('[TRANSCRIPTION] Skipped: capturing=', isCapturingRef.current, 'meetingId=', meetingIdRef.current);
-      return;
-    }
-    if (blob.size < 1000) {
-      console.log('[TRANSCRIPTION] Skipped tiny blob:', blob.size, 'bytes');
-      return;
-    }
-
-    console.log('[TRANSCRIPTION] Sending', (blob.size / 1024).toFixed(1), 'KB audio to server...');
-    isTranscribingRef.current = true;
-  const speakerName = normalizeSpeakerName(currentSpeakerRef.current);
-    try {
-      // Convert blob to base64
-      const base64data = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result.split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-
-      const response = await makeAuthenticatedRequest('/recording/transcribe-audio', {
-        method: 'POST',
-        body: JSON.stringify({
-          audio_data: base64data,
-          language: selectedLanguage,
-          meeting_id: meetingIdRef.current,
-          speaker: speakerName
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('[TRANSCRIPTION] Server response:', data);
-        if (data.text && data.text.trim()) {
-          const entry = {
-            id: Date.now(),
-            speaker: speakerName,
-            text: data.text.trim(),
-            timestamp: new Date().toLocaleTimeString(),
-            confidence: 0.85
-          };
-          setLiveTranscript(prev => [...prev, entry]);
-        }
-      }
-    } catch (err) {
-      console.error('[TRANSCRIPTION] Error sending audio:', err);
-    } finally {
-      isTranscribingRef.current = false;
-    }
-  };
-
-  // Create a fresh MediaRecorder that collects audio for one cycle
-  const startTranscriptionRecorder = () => {
-    const stream = activeStreamRef.current;
-    if (!stream || stream.getAudioTracks().length === 0) return;
-
-    try {
-      const recorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
-      const chunks = [];
-
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.push(e.data);
-      };
-
-      recorder.onstop = () => {
-        // Combine chunks into one complete WebM blob and send
-        if (chunks.length > 0) {
-          const blob = new Blob(chunks, { type: 'audio/webm;codecs=opus' });
-          sendBlobForTranscription(blob);
-        }
-      };
-
-      recorder.start(1000); // Collect data every second
-      transcriptionRecorderRef.current = recorder;
-    } catch (e) {
-      console.warn('[TRANSCRIPTION] Failed to create recorder:', e);
-    }
-  };
-
-  const cycleTranscriptionRecorder = () => {
-    // Stop current recorder (triggers onstop → sends audio)
-    if (transcriptionRecorderRef.current && transcriptionRecorderRef.current.state !== 'inactive') {
-      try { transcriptionRecorderRef.current.stop(); } catch (e) {}
-    }
-    // Start a fresh recorder for the next cycle
-    if (isCapturingRef.current) {
-      startTranscriptionRecorder();
-    }
-  };
-
-  const startServerTranscription = () => {
-    isTranscribingRef.current = false;
-
-    // Start the first transcription recorder
-    startTranscriptionRecorder();
-
-    // Every 10 seconds, stop the current recorder and start a new one
-    transcriptionTimerRef.current = setInterval(() => {
-      cycleTranscriptionRecorder();
-    }, 10000);
-
-    console.log('[TRANSCRIPTION] Server-side transcription started (10s cycles)');
-  };
-
-  const stopServerTranscription = async () => {
-    if (transcriptionTimerRef.current) {
-      clearInterval(transcriptionTimerRef.current);
-      transcriptionTimerRef.current = null;
-    }
-
-    // Stop the transcription recorder to flush remaining audio
-    if (transcriptionRecorderRef.current && transcriptionRecorderRef.current.state !== 'inactive') {
-      try { transcriptionRecorderRef.current.stop(); } catch (e) {}
-    }
-    transcriptionRecorderRef.current = null;
-
-    console.log('[TRANSCRIPTION] Server-side transcription stopped');
-  };
-
-  // ============================================
   // START CAPTURE
   // ============================================
   const startCapture = async () => {
@@ -580,7 +457,7 @@ const CaptureAudio = ({ onMeetingCreated, onNavigate }) => {
         syncCurrentSpeaker(zoomSpeaker);
       }
 
-      startServerTranscription();
+      startTranscription(activeStream);
 
       setIsPaused(false);
       setRecordingTime(0);
@@ -606,16 +483,14 @@ const CaptureAudio = ({ onMeetingCreated, onNavigate }) => {
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
         mediaRecorderRef.current.resume();
       }
-      // Resume server transcription
-      startServerTranscription();
+      startTranscription(activeStreamRef.current);
       setIsPaused(false);
     } else {
       // Pause
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
         mediaRecorderRef.current.pause();
       }
-      // Pause server transcription
-      stopServerTranscription();
+      stopHookTranscription();
       setIsPaused(true);
     }
   };
@@ -627,8 +502,8 @@ const CaptureAudio = ({ onMeetingCreated, onNavigate }) => {
     try {
       setStatus('stopping');
 
-      // Stop server transcription (sends any remaining buffered audio)
-      await stopServerTranscription();
+      // Stop hook transcription
+      stopHookTranscription();
 
       // Stop media recorder
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {

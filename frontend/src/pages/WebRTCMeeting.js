@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import io from 'socket.io-client';
+import { useSTT } from '../hooks/useSTT';
 
 // ─── E2E Encryption Helpers ──────────────────────────────────────
 const E2E_SUPPORTED = typeof window !== 'undefined' && (
@@ -27,8 +28,7 @@ async function importKey(keyStr) {
   return crypto.subtle.importKey('raw', raw, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
 }
 
-// ─── Transcription State Machine ─────────────────────────────────
-const STT_STATES = { IDLE: 'IDLE', STARTING: 'STARTING', LISTENING: 'LISTENING', STOPPING: 'STOPPING', RESTARTING: 'RESTARTING' };
+// ─── Transcription State ─────────────────────────────────────────
 
 // ─── Avatar Color from Name ──────────────────────────────────────
 function nameToColor(name) {
@@ -77,7 +77,6 @@ const WebRTCMeeting = ({ roomId, onLeave, isHost = false, meetingData = null }) 
   const [toasts, setToasts] = useState([]);
 
   // ── Transcription State ──
-  const [sttState, setSttState] = useState(STT_STATES.IDLE);
   const [transcript, setTranscript] = useState([]);
   const [transcriptionEnabled, setTranscriptionEnabled] = useState(meetingData?.settings?.auto_transcription ?? true);
 
@@ -93,9 +92,6 @@ const WebRTCMeeting = ({ roomId, onLeave, isHost = false, meetingData = null }) 
   const peerConnections = useRef(new Map());
   const socketRef = useRef(null);
   const transcriptEndRef = useRef(null);
-  const recognitionRef = useRef(null);
-  const sttStateRef = useRef(STT_STATES.IDLE);
-  const sttRestartCount = useRef(0);
   const initRef = useRef(false);
   const isAudioEnabledRef = useRef(isAudioEnabled);
   const isVideoEnabledRef = useRef(isVideoEnabled);
@@ -105,11 +101,29 @@ const WebRTCMeeting = ({ roomId, onLeave, isHost = false, meetingData = null }) 
 
   const { makeAuthenticatedRequest, user, API_BASE } = useAuth();
 
+  const { startTranscription, stopTranscription, isTranscribing } = useSTT({
+    language: meetingData?.language || 'en-US',
+    meetingId: roomId,
+    currentSpeaker: user.name || 'You',
+    onTranscript: (entry, { engine }) => {
+      setTranscript(prev => [...prev, entry]);
+      if (isAudioEnabledRef.current) {
+        if (socketRef.current) {
+          socketRef.current.emit('transcript-update', { room_id: roomId.toUpperCase(), transcript: entry });
+        }
+        if (engine === 'webkit') {
+          makeAuthenticatedRequest(`/webrtc/room/${roomId}/transcript`, {
+            method: 'POST', body: JSON.stringify({ speaker_name: entry.speaker, text: entry.text, confidence: entry.confidence })
+          }).catch(() => {});
+        }
+      }
+    }
+  });
+
   // Keep refs in sync
   useEffect(() => { isAudioEnabledRef.current = isAudioEnabled; }, [isAudioEnabled]);
   useEffect(() => { isVideoEnabledRef.current = isVideoEnabled; }, [isVideoEnabled]);
   useEffect(() => { transcriptionEnabledRef.current = transcriptionEnabled; }, [transcriptionEnabled]);
-  useEffect(() => { sttStateRef.current = sttState; }, [sttState]);
 
   // Meeting duration timer
   useEffect(() => {
@@ -350,82 +364,7 @@ const WebRTCMeeting = ({ roomId, onLeave, isHost = false, meetingData = null }) 
     remoteVideosRef.current.delete(socketId);
   }, []);
 
-  const startRecognition = useCallback(() => {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return;
-    
-    // If it's stopping, allow it to restart by waiting a tiny bit, or just proceed since we will create a new instance anyway.
-    if (sttStateRef.current === STT_STATES.STARTING || sttStateRef.current === STT_STATES.LISTENING) return;
-    if (!isAudioEnabledRef.current || !transcriptionEnabledRef.current) return;
 
-    setSttState(STT_STATES.STARTING);
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recog = new SR();
-    recog.continuous = true;
-    recog.interimResults = true;
-    recog.lang = meetingData?.language || 'en-US';
-
-    recog.onstart = () => { setSttState(STT_STATES.LISTENING); sttRestartCount.current = 0; };
-
-    recog.onresult = (event) => {
-      if (!isAudioEnabledRef.current) return;
-      let finalText = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        if (event.results[i].isFinal) finalText += event.results[i][0].transcript;
-      }
-      if (finalText.trim()) {
-        const entry = {
-          id: Date.now(), speaker: user.name || 'You', text: finalText.trim(),
-          timestamp: new Date().toLocaleTimeString(),
-          confidence: event.results[event.results.length - 1][0].confidence || 1.0,
-          is_muted: !isAudioEnabledRef.current
-        };
-        setTranscript(prev => [...prev, entry]);
-        if (isAudioEnabledRef.current) {
-          // Save to backend
-          makeAuthenticatedRequest(`/webrtc/room/${roomId}/transcript`, {
-            method: 'POST', body: JSON.stringify({ speaker_name: entry.speaker, text: entry.text, confidence: entry.confidence })
-          }).catch(() => {});
-          // Broadcast via socket
-          if (socketRef.current) {
-            socketRef.current.emit('transcript-update', { room_id: roomId.toUpperCase(), transcript: entry });
-          }
-        }
-      }
-    };
-
-    recog.onerror = (event) => {
-      if (event.error === 'no-speech' || event.error === 'aborted') return; // Non-fatal
-      if (event.error === 'not-allowed') {
-        setSttState(STT_STATES.IDLE);
-        addToast('Microphone permission denied for transcription', 'error');
-        return;
-      }
-      console.warn('STT error:', event.error);
-    };
-
-    recog.onend = () => {
-      setSttState(STT_STATES.IDLE);
-      if (isAudioEnabledRef.current && transcriptionEnabledRef.current && sttRestartCount.current < 10) {
-        sttRestartCount.current++;
-        setSttState(STT_STATES.RESTARTING);
-        setTimeout(() => {
-          if (isAudioEnabledRef.current && transcriptionEnabledRef.current) startRecognition();
-        }, 500 + Math.min(sttRestartCount.current * 200, 2000));
-      }
-    };
-
-    recognitionRef.current = recog;
-    try { recog.start(); } catch (e) { setSttState(STT_STATES.IDLE); }
-  }, [meetingData, user, roomId, makeAuthenticatedRequest, addToast]);
-
-  const stopRecognition = useCallback(() => {
-    if (recognitionRef.current) {
-      setSttState(STT_STATES.STOPPING);
-      try { recognitionRef.current.stop(); } catch (e) { /* ok */ }
-      recognitionRef.current = null;
-      setSttState(STT_STATES.IDLE);
-    }
-  }, []);
 
   // ── Socket Initialization ──
   const initializeSocket = useCallback((stream) => {
@@ -543,15 +482,15 @@ const WebRTCMeeting = ({ roomId, onLeave, isHost = false, meetingData = null }) 
     socket.on('transcription-status-changed', (data) => {
       setTranscriptionEnabled(data.enabled);
       addToast(data.message, 'info');
-      if (!data.enabled) stopRecognition();
-      else if (isAudioEnabledRef.current) startRecognition();
+      if (!data.enabled) stopTranscription();
+      else if (isAudioEnabledRef.current) startTranscription(localStreamRef.current);
     });
 
     socket.on('force-muted', (data) => {
       const audioTrack = localStreamRef.current?.getAudioTracks()[0];
       if (audioTrack) audioTrack.enabled = false;
       setIsAudioEnabled(false);
-      stopRecognition();
+      stopTranscription();
       addToast(`You were muted by ${data.muted_by}`, 'warning');
     });
 
@@ -582,7 +521,7 @@ const WebRTCMeeting = ({ roomId, onLeave, isHost = false, meetingData = null }) 
       if (err.code === 'ROOM_FULL') addToast('Meeting is full', 'error');
       else setConnectionError(err.message || 'Socket error');
     });
-  }, [roomId, user, API_BASE, createPeerConnection, handleOffer, handleAnswer, handleIceCandidate, handleUserLeft, addToast, startRecognition, stopRecognition, participants, pinnedParticipant]);
+  }, [roomId, user, API_BASE, createPeerConnection, handleOffer, handleAnswer, handleIceCandidate, handleUserLeft, addToast, startTranscription, stopTranscription, participants, pinnedParticipant]);
 
   // ── Media Controls ──
   const toggleVideo = useCallback(async () => {
@@ -644,11 +583,11 @@ const WebRTCMeeting = ({ roomId, onLeave, isHost = false, meetingData = null }) 
       });
     }
     // Transcription: stop when muted, start when unmuted
-    if (!newState) stopRecognition();
+    if (!newState) stopTranscription();
     else if (transcriptionEnabledRef.current) {
-      setTimeout(() => startRecognition(), 300);
+      setTimeout(() => startTranscription(localStreamRef.current), 300);
     }
-  }, [isAudioEnabled, roomId, user.name, stopRecognition, startRecognition]);
+  }, [isAudioEnabled, roomId, user.name, stopTranscription, startTranscription]);
 
   // ── Screen Sharing ──
   const toggleScreenShare = useCallback(async () => {
@@ -716,10 +655,10 @@ const WebRTCMeeting = ({ roomId, onLeave, isHost = false, meetingData = null }) 
         });
       }
       setTranscriptionEnabled(newState);
-      if (!newState) stopRecognition();
-      else if (isAudioEnabledRef.current) startRecognition();
+      if (!newState) stopTranscription();
+      else if (isAudioEnabledRef.current) startTranscription(localStreamRef.current);
     } catch (e) { addToast('Failed to toggle transcription', 'error'); }
-  }, [hostStatus, transcriptionEnabled, makeAuthenticatedRequest, roomId, user.name, addToast, stopRecognition, startRecognition]);
+  }, [hostStatus, transcriptionEnabled, makeAuthenticatedRequest, roomId, user.name, addToast, stopTranscription, startTranscription]);
 
   const forceMuteParticipant = useCallback((socketId) => {
     if (!hostStatus || !socketRef.current) return;
@@ -751,11 +690,11 @@ const WebRTCMeeting = ({ roomId, onLeave, isHost = false, meetingData = null }) 
     peerConnections.current.forEach(pc => pc.close());
     peerConnections.current.clear();
     // Stop transcription
-    stopRecognition();
+    stopTranscription();
     // Clear video elements
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
     remoteVideosRef.current.forEach(el => { if (el) el.srcObject = null; });
-  }, [stopRecognition]);
+  }, [stopTranscription]);
 
   const leaveMeeting = useCallback(async () => {
     try {
@@ -803,7 +742,7 @@ const WebRTCMeeting = ({ roomId, onLeave, isHost = false, meetingData = null }) 
           await new Promise(r => setTimeout(r, 500));
           initializeSocket(stream);
           if ((meetingData?.settings?.auto_transcription ?? true) && audOn) {
-            setTimeout(() => startRecognition(), 2000);
+            setTimeout(() => startTranscription(stream), 2000);
           }
         }
       } catch (e) {
@@ -1167,9 +1106,9 @@ const WebRTCMeeting = ({ roomId, onLeave, isHost = false, meetingData = null }) 
                   {/* Transcription controls */}
                   <div className="flex items-center justify-between mb-3 p-2 bg-gray-800/40 rounded-xl">
                     <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${sttState === STT_STATES.LISTENING ? 'bg-emerald-400 animate-pulse' : 'bg-gray-500'}`} />
+                      <div className={`w-2 h-2 rounded-full ${isTranscribing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-500'}`} />
                       <span className="text-xs text-gray-400">
-                        {sttState === STT_STATES.LISTENING ? 'Listening...' : transcriptionEnabled ? 'Standby' : 'Disabled'}
+                        {isTranscribing ? 'Listening...' : transcriptionEnabled ? 'Standby' : 'Disabled'}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
