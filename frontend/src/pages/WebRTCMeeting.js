@@ -103,19 +103,18 @@ const WebRTCMeeting = ({ roomId, onLeave, isHost = false, meetingData = null }) 
 
   const { startTranscription, stopTranscription, isTranscribing } = useSTT({
     language: meetingData?.language || 'en-US',
-    meetingId: roomId,
+    meetingId: null, // Let WebRTC endpoints handle DB saving
     currentSpeaker: user.name || 'You',
-    onTranscript: (entry, { engine }) => {
+    onTranscript: (entry) => {
       setTranscript(prev => [...prev, entry]);
       if (isAudioEnabledRef.current) {
         if (socketRef.current) {
           socketRef.current.emit('transcript-update', { room_id: roomId.toUpperCase(), transcript: entry });
         }
-        if (engine === 'webkit') {
-          makeAuthenticatedRequest(`/webrtc/room/${roomId}/transcript`, {
-            method: 'POST', body: JSON.stringify({ speaker_name: entry.speaker, text: entry.text, confidence: entry.confidence })
-          }).catch(() => {});
-        }
+        // Always save to WebRTC transcript segments regardless of engine
+        makeAuthenticatedRequest(`/webrtc/room/${roomId}/transcript`, {
+          method: 'POST', body: JSON.stringify({ speaker_name: entry.speaker, text: entry.text, confidence: entry.confidence })
+        }).catch(() => {});
       }
     }
   });
