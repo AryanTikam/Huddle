@@ -23,51 +23,31 @@ print(f"[DEBUG] IS_PRODUCTION: {IS_PRODUCTION}")
 print(f"[DEBUG] FLASK_ENV: {os.getenv('FLASK_ENV')}")
 print(f"[DEBUG] RENDER env var: {os.getenv('RENDER')}")
 
-# Configure CORS for production and development
-if IS_PRODUCTION:
-    allowed_origins = [
-        'https://huddle-gathersmarter.netlify.app',
-        'https://huddle-gathersmarter.netlify.app/',
-        'https://huddle-bugz.onrender.com',
-        'https://huddle-bugz.onrender.com/'
-    ]
-else:
-    allowed_origins = ['http://localhost:3000']
-
-# Add Chrome extension origins from environment variable
-chrome_extension_ids = os.getenv('CHROME_EXTENSION_IDS', '').strip()
-if chrome_extension_ids:
-    for ext_id in chrome_extension_ids.split(','):
-        ext_id = ext_id.strip()
-        if ext_id:
-            allowed_origins.append(f'chrome-extension://{ext_id}')
-
-# Always allow local frontend development origins, even if deployment env flags are set.
-LOCAL_ORIGIN_PATTERNS = [
+# Configure CORS with unified regex patterns for all environments
+ALLOWED_ORIGIN_PATTERNS = [
+    # Local development
     re.compile(r'^http://localhost(?::\d+)?$'),
     re.compile(r'^http://127\.0\.0\.1(?::\d+)?$'),
+    # Production deployments
+    re.compile(r'^https://huddle-gathersmarter\.netlify\.app/?$'),
+    re.compile(r'^https://huddle-bugz\.onrender\.com/?$'),
+    # Chrome extensions
+    re.compile(r'^chrome-extension://.*$')
 ]
 
 def is_allowed_origin(origin):
-    """Check if origin is allowed, supporting chrome-extension:// dynamically."""
+    """Check if origin is allowed using regex patterns."""
     if not origin:
         return False
-    if origin in allowed_origins:
-        return True
-    if any(pattern.match(origin) for pattern in LOCAL_ORIGIN_PATTERNS):
-        return True
-    # Allow any chrome-extension:// origin (sandboxed by Chrome)
-    if origin.startswith('chrome-extension://'):
-        return True
-    return False
-
-print(f"[DEBUG] Allowed origins: {allowed_origins}")
+    return any(pattern.match(origin) for pattern in ALLOWED_ORIGIN_PATTERNS)
 
 CORS(app, 
-     origins=allowed_origins + [r'chrome-extension://.*'], 
+     origins=ALLOWED_ORIGIN_PATTERNS, 
      supports_credentials=True,
      allow_headers=['Content-Type', 'Authorization'],
      methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
+
+print(f"[DEBUG] CORS initialized with {len(ALLOWED_ORIGIN_PATTERNS)} origin patterns")
 
 @app.before_request
 def handle_options():
