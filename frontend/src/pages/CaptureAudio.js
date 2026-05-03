@@ -35,6 +35,9 @@ const CaptureAudio = ({ onMeetingCreated, onNavigate }) => {
   // Audio recording for sending to backend
   const [audioChunks, setAudioChunks] = useState([]);
   
+  // Mobile check
+  const [isMobile, setIsMobile] = useState(false);
+  
   // Refs
   const systemStreamRef = useRef(null);
   const micStreamRef = useRef(null);
@@ -91,6 +94,8 @@ const CaptureAudio = ({ onMeetingCreated, onNavigate }) => {
 
   useEffect(() => {
     fetchFolders();
+    const isMobileDevice = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    setIsMobile(isMobileDevice);
     return () => cleanup();
   }, []);
 
@@ -577,6 +582,45 @@ const CaptureAudio = ({ onMeetingCreated, onNavigate }) => {
   // ============================================
   // RENDER
   // ============================================
+  if (isMobile) {
+    return (
+      <div className="max-w-4xl mx-auto p-4 sm:p-6">
+        <div className="flex items-center mb-6">
+          <button
+            onClick={() => onNavigate('dashboard')}
+            className="mr-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          </button>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+              Capture External Audio
+            </h1>
+          </div>
+        </div>
+        
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-8 text-center mt-10">
+          <div className="mx-auto w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-4">
+            <Monitor className="w-8 h-8 text-blue-500" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Not Supported on Mobile Phones</h2>
+          <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+            The external audio capture feature requires advanced browser APIs that are not currently supported on mobile browsers.
+          </p>
+          <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto mt-2">
+            Please use a laptop or desktop computer to access this feature.
+          </p>
+          <button
+            onClick={() => onNavigate('dashboard')}
+            className="mt-6 bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+          >
+            Return to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6">
       {/* Header */}
